@@ -1,0 +1,32 @@
+{
+  "name": "riwen",
+  "module": "src/server.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "python scripts/app.py start",
+    "stop": "python scripts/app.py stop",
+    "bridge:start": "bun src/server.ts",
+    "test:launcher": "python tests/launcher_test.py && bun scripts/test-launcher.ts",
+    "check": "biome check . && tsc --noEmit",
+    "format": "biome check --write .",
+    "test:lua": "lua tests/rime_test.lua",
+    "test:rime": "bun test ./tests/native-rime.integration.ts",
+    "test:ibus": "bun scripts/test-ibus.ts",
+    "rime:prepare": "bun scripts/prepare-rime-native.ts",
+    "rime:demo": "bun scripts/rime-demo.ts",
+    "ibus:prepare": "bun scripts/prepare-ibus.ts",
+    "ibus:start": "python src/ibus/main.py --profile .cache/ibus-profile",
+    "model:download": "bun scripts/download-model.ts",
+    "runtime:download": "bun scripts/download-runtime.ts",
+    "model:start": "bun scripts/start-model.ts",
+    "benchmark": "bun scripts/benchmark.ts",
+    "stage": "bun scripts/stage.ts",
+    "demo": "bun examples/request.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@types/bun": "1.4.2",
+    "typescript": "^5"
+  }
+}

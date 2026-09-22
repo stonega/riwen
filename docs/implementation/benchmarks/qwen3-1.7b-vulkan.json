@@ -1,0 +1,180 @@
+{
+  "model": "Qwen3-1.7B Q4_K_M",
+  "timestamp": "2026-09-22T04:39:24.415Z",
+  "firstRequestMs": 698,
+  "correct": 24,
+  "total": 24,
+  "p50Ms": 442,
+  "p95Ms": 516,
+  "note": "Synthetic model-only benchmark; excludes 80ms debounce, Rime/IBus, and real typing. Not an accuracy evaluation.",
+  "results": [
+    {
+      "pass": 0,
+      "case": 1,
+      "ms": 362,
+      "selected": "程式",
+      "correct": true
+    },
+    {
+      "pass": 0,
+      "case": 2,
+      "ms": 387,
+      "selected": "城市",
+      "correct": true
+    },
+    {
+      "pass": 0,
+      "case": 3,
+      "ms": 371,
+      "selected": "公式",
+      "correct": true
+    },
+    {
+      "pass": 0,
+      "case": 4,
+      "ms": 394,
+      "selected": "共识",
+      "correct": true
+    },
+    {
+      "pass": 0,
+      "case": 5,
+      "ms": 433,
+      "selected": "散步",
+      "correct": true
+    },
+    {
+      "pass": 0,
+      "case": 6,
+      "ms": 359,
+      "selected": "三步",
+      "correct": true
+    },
+    {
+      "pass": 0,
+      "case": 7,
+      "ms": 444,
+      "selected": "签字",
+      "correct": true
+    },
+    {
+      "pass": 0,
+      "case": 8,
+      "ms": 416,
+      "selected": "铅字",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 1,
+      "ms": 430,
+      "selected": "程式",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 2,
+      "ms": 396,
+      "selected": "城市",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 3,
+      "ms": 490,
+      "selected": "公式",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 4,
+      "ms": 480,
+      "selected": "共识",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 5,
+      "ms": 495,
+      "selected": "散步",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 6,
+      "ms": 449,
+      "selected": "三步",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 7,
+      "ms": 491,
+      "selected": "签字",
+      "correct": true
+    },
+    {
+      "pass": 1,
+      "case": 8,
+      "ms": 423,
+      "selected": "铅字",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 1,
+      "ms": 538,
+      "selected": "程式",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 2,
+      "ms": 455,
+      "selected": "城市",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 3,
+      "ms": 466,
+      "selected": "公式",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 4,
+      "ms": 516,
+      "selected": "共识",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 5,
+      "ms": 461,
+      "selected": "散步",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 6,
+      "ms": 425,
+      "selected": "三步",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 7,
+      "ms": 487,
+      "selected": "签字",
+      "correct": true
+    },
+    {
+      "pass": 2,
+      "case": 8,
+      "ms": 442,
+      "selected": "铅字",
+      "correct": true
+    }
+  ]
+}

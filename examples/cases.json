@@ -1,0 +1,50 @@
+[
+  {
+    "context": "我用Python写了一个",
+    "input": "igui",
+    "candidates": ["城市", "程式", "诚实", "乘势"],
+    "expected": "程式"
+  },
+  {
+    "context": "北京是一座历史悠久的",
+    "input": "igui",
+    "candidates": ["程式", "诚实", "城市", "乘势"],
+    "expected": "城市"
+  },
+  {
+    "context": "计算圆面积需要用到这个",
+    "input": "gsui",
+    "candidates": ["公事", "公式", "工时", "共识"],
+    "expected": "公式"
+  },
+  {
+    "context": "这件事关系到整个团队，我们需要达成",
+    "input": "gsui",
+    "candidates": ["公式", "公事", "共识", "工时"],
+    "expected": "共识"
+  },
+  {
+    "context": "周末我们一起去公园",
+    "input": "sjbu",
+    "candidates": ["三步", "散布", "散步"],
+    "expected": "散步"
+  },
+  {
+    "context": "走到门口只需要",
+    "input": "sjbu",
+    "candidates": ["散步", "三步", "散布"],
+    "expected": "三步"
+  },
+  {
+    "context": "这份合同必须由本人",
+    "input": "qmzi",
+    "candidates": ["铅字", "签字", "钳子"],
+    "expected": "签字"
+  },
+  {
+    "context": "旧式印刷用的是",
+    "input": "qmzi",
+    "candidates": ["签字", "钳子", "铅字"],
+    "expected": "铅字"
+  }
+]
