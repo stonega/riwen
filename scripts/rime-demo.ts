@@ -1,4 +1,4 @@
-import { startServer } from "../src/server";
+import { startServer } from "../tests/support/python-backend";
 import { createProbe } from "./native-probe";
 
 // Use an ephemeral bridge port, so this demo does not compete with bridge:start.

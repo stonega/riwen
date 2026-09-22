@@ -1,5 +1,6 @@
 """Runs under dbus-run-session, with a private IBus address and isolated XDG dirs."""
 import os
+import json
 import selectors
 import subprocess
 import sys
@@ -14,9 +15,10 @@ profile = Path(sys.argv[1]).resolve()
 launcher = "--launcher" in sys.argv
 chosen_word = "城市" if "--prefer-first" in sys.argv else "程式"
 correction = "--correction" in sys.argv
+voice = "--voice" in sys.argv
 if correction:
     chosen_word = "这是怎么回事"
-project = Path(__file__).resolve().parents[1]
+project = Path(os.environ.get("RIWEN_TEST_APP", Path(__file__).resolve().parents[1]))
 address = f"unix:path={profile}/ibus.sock"
 env = dict(os.environ, IBUS_ADDRESS=address,
            IBUS_USE_PORTAL="0", GIO_USE_VFS="local", GSETTINGS_BACKEND="memory",
@@ -55,7 +57,8 @@ try:
     if launcher:
         assert bus.set_global_engine("xkb:us::eng"), "Could not select original private-bus engine"
     command = ([sys.executable, str(project / "scripts/app.py"), "start"] if launcher else
-               [sys.executable, str(project / "src/ibus/main.py"), "--profile", str(profile)])
+               [sys.executable, str(Path(__file__).with_name("voice_fixture_frontend.py") if voice else
+                                    project / "src/ibus/main.py"), "--profile", str(profile)])
     frontend = subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     with selectors.DefaultSelector() as selector:
         selector.register(frontend.stdout, selectors.EVENT_READ)
@@ -74,11 +77,16 @@ try:
         assert bus.get_global_engine().get_name() == "riwen", "Launcher did not switch engines"
         duplicate = subprocess.run(command, env=env, capture_output=True, text=True, timeout=5)
         assert duplicate.returncode == 1 and "already running" in duplicate.stderr
+        status = subprocess.run([sys.executable, str(project / "scripts/app.py"), "status"], env=env,
+                                capture_output=True, text=True, timeout=5)
+        status = json.loads(status.stdout)
+        assert status["running"] and status["phase"] == "ready" and status["schema"]
         print("PASS: one command selects Riwen; duplicate launch is harmless", flush=True)
 
     context = bus.create_input_context("riwen-integration-test")
-    context.set_capabilities(int(IBus.Capabilite.PREEDIT_TEXT | IBus.Capabilite.LOOKUP_TABLE | IBus.Capabilite.FOCUS))
+    context.set_capabilities(int(IBus.Capabilite.PREEDIT_TEXT | IBus.Capabilite.AUXILIARY_TEXT | IBus.Capabilite.LOOKUP_TABLE | IBus.Capabilite.FOCUS))
     menu, commits = [], []
+    auxiliary = []
 
     def signal_message(_connection, _sender, _path, _interface, name, parameters):
         data = parameters.unpack()
@@ -87,6 +95,8 @@ try:
             menu[:] = [text[2] for text in table[7]] if visible else []
         elif name == "CommitText":
             commits.append(data[0][2])
+        elif name == "UpdateAuxiliaryText":
+            auxiliary[:] = [data[0][2]] if data[1] else []
 
     # Subscribe to wire messages to avoid PyGObject ownership issues with borrowed
     # IBusSerializable signal arguments on the installed development GI version.
@@ -99,6 +109,8 @@ try:
 
     def key(value):
         result = context.process_key_event(value, 0, 0)
+        if value == IBus.KEY_F10:
+            context.process_key_event(value, 0, int(IBus.ModifierType.RELEASE_MASK))
         drain()
         return result
 
@@ -132,12 +144,68 @@ try:
     assert menu == baseline, menu
     print("PASS: focus change drops previous context", flush=True)
 
+    if voice:
+        context.reset()
+        prepare = subprocess.run([sys.executable, str(project / "scripts/app.py"), "voice-prepare"],
+                                 env=dict(env, RIWEN_SESSION_DIR=str(profile)), capture_output=True, text=True, timeout=5)
+        assert json.loads(prepare.stdout)["ok"]
+        def voice_ready():
+            try:
+                return json.loads((profile / "voice-status.json").read_text())["phase"] == "ready"
+            except (OSError, ValueError): return False
+        wait_for(voice_ready, "voice model preparation control")
+        key(IBus.KEY_F10)
+        wait_for(lambda: auxiliary == ["Listening"], "voice recording indicator")
+        key(IBus.KEY_F10)
+        wait_for(lambda: commits[-1] == "语音输入测试", "voice transcript commit")
+        before = len(commits)
+        wait_for(voice_ready, "voice ready after commit")
+        key(IBus.KEY_F10)
+        wait_for(lambda: auxiliary == ["Listening"], "second dictation")
+        key(IBus.KEY_F10)
+        context.focus_out()
+        context.focus_in()
+        until = time.monotonic() + 0.4
+        while time.monotonic() < until:
+            drain(); time.sleep(0.005)
+        assert len(commits) == before, "Late speech reached refocused field"
+        key(IBus.KEY_F10)
+        wait_for(lambda: auxiliary == ["Listening"], "cancel test recording")
+        key(IBus.KEY_Escape)
+        wait_for(voice_ready, "cancelled recording")
+        wait_for(lambda: not auxiliary, "cancel hides voice indicator")
+        context.process_key_event(IBus.KEY_F10, 0, 0)
+        wait_for(lambda: auxiliary == ["Listening"], "held F10 recording")
+        context.process_key_event(IBus.KEY_F10, 0, 0)
+        drain()
+        assert auxiliary == ["Listening"], "F10 autorepeat stopped dictation"
+        context.process_key_event(IBus.KEY_F10, 0, int(IBus.ModifierType.RELEASE_MASK))
+        type_input("wo")
+        wait_for(voice_ready, "typing cancels dictation")
+        assert len(commits) == before, "Cancelled speech was committed"
+        context.reset()
+        key(IBus.KEY_F10)
+        wait_for(lambda: auxiliary == ["Listening"], "panel cancel recording")
+        cancelled = subprocess.run([sys.executable, str(project / "scripts/app.py"), "voice-cancel"],
+                                   env=dict(env, RIWEN_SESSION_DIR=str(profile)), capture_output=True, text=True, timeout=5)
+        assert json.loads(cancelled.stdout)["ok"]
+        wait_for(voice_ready, "panel cancelled recording")
+        type_input("wo")
+        wait_for(lambda: bool(menu), "Rime typing after voice")
+        baseline = list(menu)
+        key(IBus.KEY_F10)
+        assert menu == baseline, "Voice destroyed a Rime composition"
+        context.reset()
+        print("PASS: voice commits once, cancels on focus/Esc, and preserves Rime typing", flush=True)
+
     for purpose, hints in [(IBus.InputPurpose.PASSWORD, 0), (IBus.InputPurpose.PIN, 0),
                            (IBus.InputPurpose.FREE_FORM, IBus.InputHints.PRIVATE)]:
         context.reset()
         context.set_content_type(purpose, hints)
         drain()
         assert not key(ord("a")), "Private field key was captured"
+        if voice:
+            assert not key(IBus.KEY_F10), "Voice shortcut captured in private field"
     print("PASS: password/PIN/private fields bypass Rime and ranking", flush=True)
 
     context.destroy()
@@ -148,7 +216,7 @@ try:
         frontend.wait(timeout=15)
         assert frontend.returncode == 0, "Launcher did not stop cleanly"
         assert bus.get_global_engine().get_name() == "xkb:us::eng", "Original engine was not restored"
-        assert not (project / ".cache/app.sock").exists(), "Control socket leaked"
+        assert not (Path(env.get("RIWEN_SESSION_DIR", project / ".cache")) / "app.sock").exists(), "Control socket leaked"
         print("PASS: stop restores the previous engine and removes the control socket", flush=True)
 finally:
     if frontend:

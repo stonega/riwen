@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { createProbe, waitForFirst } from "../scripts/native-probe";
-import type { RankRequest } from "../src/protocol";
-import { startServer } from "../src/server";
+import type { RankRequest } from "./support/python-backend";
+import { startServer } from "./support/python-backend";
 
 test("long-phrase correction preserves the original, preedit, and clean commit", async () => {
   let received: RankRequest | undefined;

@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import { prepareProfile, schemaId } from "./rime-profile";
+import { prepareProfile } from "../tests/support/profile";
 
 export type Snapshot = {
   input: string;
@@ -26,7 +26,11 @@ async function* lines(stream: ReadableStream<Uint8Array>) {
   }
 }
 
-export async function createProbe(port: number) {
+export async function createProbe(
+  port: number,
+  schemaId = "rime_frost_double_pinyin_flypy",
+  source?: string,
+) {
   const project = resolve(import.meta.dir, "..");
   const native = `${project}/.cache/rime-native`;
   if (!(await Bun.file(`${native}/rime-probe`).exists())) {
@@ -36,7 +40,7 @@ export async function createProbe(port: number) {
   await mkdir(profiles, { recursive: true });
   const profile = await mkdtemp(`${profiles}/session-`);
   try {
-    await prepareProfile(profile, port);
+    await prepareProfile(profile, port, source, schemaId);
   } catch (error) {
     await rm(profile, { recursive: true, force: true });
     throw error;

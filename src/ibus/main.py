@@ -1,6 +1,8 @@
 """Register an experimental engine for this IBus connection; never switch engines."""
 import argparse
 import signal
+import os
+import sys
 from pathlib import Path
 
 import gi
@@ -8,6 +10,9 @@ gi.require_version("IBus", "1.0")
 from gi.repository import GLib, GLibUnix, IBus  # noqa: E402
 from engine import RiwenEngine  # noqa: E402
 from native import NativeRime  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from voice.control import VoiceControl  # noqa: E402
+from riwen.paths import isolated_profile
 
 
 def main():
@@ -15,22 +20,25 @@ def main():
     parser.add_argument("--profile", required=True)
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[2]
-    profile = Path(args.profile).resolve()
-    # Deliberately refuse the user's ordinary Rime directory.
-    if not profile.is_relative_to(project / ".cache"):
-        parser.error("Experimental profile must be under the project's .cache")
+    try:
+        profile = isolated_profile(args.profile)
+    except ValueError as error:
+        parser.error(str(error))
     IBus.init()
     bus = IBus.Bus.new()
     if not bus.is_connected():
         raise RuntimeError("Cannot connect to IBus")
     RiwenEngine.native = NativeRime(project, profile)
+    voice = VoiceControl(project, os.environ.get("RIWEN_VOICE_CONTROL_DIR", profile),
+                         os.environ.get("RIWEN_VOICE", "0") == "1")
+    RiwenEngine.voice = voice.controller
     factory = IBus.Factory.new(bus.get_connection())
     factory.add_engine("riwen", RiwenEngine)
     component = IBus.Component.new(
         "org.freedesktop.IBus.Riwen", "Riwen experimental", "0.1", "", "", "", "", "",
     )
     component.add_engine(IBus.EngineDesc.new(
-        "riwen", "Riwen 小鹤 (experimental)", "Local Qwen candidate ranking",
+        "riwen", "Riwen · " + RiwenEngine.native.scheme["name"], "Local Qwen candidate ranking",
         "zh_CN", "", "", "", "us",
     ))
     if not bus.register_component(component):
@@ -43,6 +51,7 @@ def main():
     try:
         loop.run()
     finally:
+        voice.close()
         for engine in list(RiwenEngine.instances):
             engine.shutdown()
         factory.destroy()

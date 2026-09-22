@@ -12,7 +12,7 @@ Qwen3-1.7B Q4_K_M, llama.cpp b10964, Vulkan1 / NVIDIA RTX 4060 Laptop,
 | GPU memory observed | About 1.4 GiB |
 
 [Raw results](benchmarks/qwen3-1.7b-vulkan.json) and [cases](../../examples/cases.json).
-Run `bun run benchmark` with the model running to reproduce. Timings include local
+Run `python3 scripts/benchmark.py` with the model running to reproduce. Timings include local
 HTTP and model execution, excluding the bridge's 80 ms debounce, Rime, and IBus.
 The sample set was used while refining the prompt; it is **not** a held-out accuracy
 test. This benchmark used no real typing corpus or actual dictionary candidates.
@@ -86,3 +86,5 @@ The actual Qwen → service → Lua → private IBus correction test also passed
 including the visible badge, original-candidate preservation, and clean commit.
 Run `RIWEN_MODEL_URL=http://127.0.0.1:PORT/v1/chat/completions bun run test:ibus --model --correction`
 against a healthy local model to repeat that path.
+
+Historical timings above predate the Python bridge migration; rerun the Python benchmark before making performance comparisons.

@@ -16,7 +16,7 @@ local context = {
   end },
 }
 local env = { engine = { context = context, schema = { config = {
-  get_int = function() return tonumber(arg[1]) or 18765 end,
+  get_int = function(_, name) if name == "riwen/port" then return tonumber(arg[1]) or 18765 end end,
 } } } }
 local processor, filter = { engine = env.engine }, { engine = env.engine }
 local function render()

@@ -10,6 +10,7 @@ from gi.repository import GLib, IBus  # noqa: E402
 class RiwenEngine(IBus.Engine):
     __gtype_name__ = "RiwenExperimentalEngine"
     native = None
+    voice = None
     instances = weakref.WeakSet()
 
     def __init__(self, *args, **kwargs):
@@ -17,6 +18,7 @@ class RiwenEngine(IBus.Engine):
         self.session = self.native.create()
         self.focused = False
         self.private = False
+        self.voice_key_down = False
         self.timer = 0
         self.serial = 0
         self.poll_until = 0
@@ -43,8 +45,10 @@ class RiwenEngine(IBus.Engine):
         preedit = state["preedit"]
         cursor = len(preedit.encode()[:state["cursor"]].decode("utf-8", errors="ignore"))
         self.update_preedit_text(IBus.Text.new_from_string(preedit), cursor, bool(preedit))
-        table = IBus.LookupTable.new(8, state["selected"], True, False)
+        table = IBus.LookupTable.new(max(1, min(16, state["page_size"])), state["selected"], True, False)
         table.set_orientation(IBus.Orientation.HORIZONTAL)
+        for label in state["labels"]:
+            table.append_label(IBus.Text.new_from_string(label))
         choice = state["qwen_choice"]
         for candidate in state["candidates"]:
             display = candidate
@@ -78,6 +82,23 @@ class RiwenEngine(IBus.Engine):
     def do_process_key_event(self, keyval, keycode, modifiers):
         if not self.focused or self.private:
             return False
+        released = bool(modifiers & IBus.ModifierType.RELEASE_MASK)
+        if self.voice and keyval == IBus.KEY_F10 and not modifiers & (
+                IBus.ModifierType.CONTROL_MASK | IBus.ModifierType.MOD1_MASK |
+                IBus.ModifierType.SHIFT_MASK | IBus.ModifierType.MOD4_MASK | IBus.ModifierType.SUPER_MASK):
+            if released:
+                self.voice_key_down = False
+            elif not self.voice_key_down:
+                self.voice_key_down = True
+                self.voice.toggle(self)
+            return True
+        if not released:
+            was_dictating = self.voice and self.voice.owns(self)
+            if was_dictating:
+                self.voice.cancel(self)
+                if keyval == IBus.KEY_Escape:
+                    return True
+            self.voice_message("")
         if modifiers & (IBus.ModifierType.SUPER_MASK | IBus.ModifierType.MOD4_MASK):
             self.reset_context()
             return False
@@ -96,6 +117,9 @@ class RiwenEngine(IBus.Engine):
         self.native.property(self.session, "riwen_mode", "off" if self.private else "auto")
 
     def do_focus_out(self):
+        self.voice_key_down = False
+        if self.voice:
+            self.voice.cancel(self)
         self.focused = False
         self.reset_context()
         self.native.property(self.session, "riwen_mode", "off")
@@ -106,11 +130,15 @@ class RiwenEngine(IBus.Engine):
         self.do_focus_out()
 
     def do_reset(self):
+        if self.voice:
+            self.voice.cancel(self)
         self.reset_context()
         self.native.lib.riwen_clear(self.session)
         self.render(self.native.state(self.session))
 
     def do_set_content_type(self, purpose, hints):
+        if self.voice:
+            self.voice.cancel(self)
         self.private = purpose in (IBus.InputPurpose.PASSWORD, IBus.InputPurpose.PIN) or bool(hints & IBus.InputHints.PRIVATE)
         self.reset_context()
         self.native.property(self.session, "riwen_mode", "auto" if self.focused and not self.private else "off")
@@ -137,6 +165,8 @@ class RiwenEngine(IBus.Engine):
         self.do_process_key_event(IBus.KEY_Down, 0, 0)
 
     def shutdown(self):
+        if self.voice:
+            self.voice.cancel(self)
         self.stop_timer()
         if self.session:
             self.native.lib.riwen_destroy(self.session)
@@ -145,3 +175,16 @@ class RiwenEngine(IBus.Engine):
     def do_destroy(self):
         self.shutdown()
         IBus.Engine.do_destroy(self)
+
+    def voice_allowed(self):
+        return self.focused and not self.private and bool(self.session)
+
+    def voice_has_composition(self):
+        return bool(self.last.get("input"))
+
+    def voice_message(self, message):
+        self.update_auxiliary_text(IBus.Text.new_from_string(message), bool(message))
+
+    def voice_commit(self, text):
+        self.reset_context()
+        self.commit_text(IBus.Text.new_from_string(text))

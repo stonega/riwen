@@ -1,10 +1,24 @@
 // Real Rime session, JSON line protocol; never connects to the desktop IBus.
 #include "rime_bridge.h"
+#include <rime_api.h>
 #include <iostream>
 #include <sstream>
 #include <string>
 
 int main(int argc, char** argv) {
+  // Test-only deployment into an explicitly supplied isolated directory.
+  if (argc == 3 && std::string(argv[1]) == "--deploy") {
+    auto* api = rime_get_api();
+    RIME_STRUCT(RimeTraits, traits);
+    traits.user_data_dir = argv[2];
+    traits.shared_data_dir = argv[2];
+    traits.app_name = "rime.riwen.fixture";
+    traits.min_log_level = 2;
+    traits.log_dir = argv[2];
+    api->setup(&traits);
+    api->deployer_initialize(&traits);
+    return api->deploy() ? 0 : 1;
+  }
   if (argc != 4) {
     std::cerr << "Usage: rime-probe USER_DIR LUA_PLUGIN SCHEMA_ID\n";
     return 2;

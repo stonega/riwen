@@ -1,6 +1,5 @@
 import { expect, test } from "bun:test";
-import { encodeRequest } from "../src/protocol";
-import { startServer } from "../src/server";
+import { encodeRequest, startServer } from "./support/python-backend";
 
 test("real Lua extension submits and visibly applies a service ranking", async () => {
   const server = await startServer({
@@ -57,7 +56,7 @@ test("real UDP request reaches the ranker and returns a correlated result", asyn
   }
 });
 
-test("LuaSocket speaks the same protocol as the Bun service", async () => {
+test("LuaSocket speaks the same protocol as the Python service", async () => {
   const server = await startServer({
     port: 0,
     debounceMs: 0,

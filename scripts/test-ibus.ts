@@ -1,43 +1,45 @@
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createCorrector, createRanker } from "../src/model";
-import { startServer } from "../src/server";
-import { prepareProfile } from "./rime-profile";
+import { prepareProfile } from "../tests/support/profile";
+import { startServer } from "../tests/support/python-backend";
 
 const project = resolve(import.meta.dir, "..");
-const root = `${project}/.cache/rime-profiles`;
+const app = process.env.RIWEN_TEST_APP ?? project;
+// Keep Unix socket names under sockaddr_un's 108-byte limit in installed apps.
+const root = process.env.RIWEN_DATA_DIR ?? `${app}/.cache`;
 await mkdir(root, { recursive: true });
-const profile = await mkdtemp(`${root}/ibus-`);
+const profile = await mkdtemp(`${root}/v-`);
 const preferFirst = process.argv.includes("--prefer-first");
 const correction = process.argv.includes("--correction");
-const correct = createCorrector(
-  process.env.RIWEN_MODEL_URL ?? "http://127.0.0.1:18080/v1/chat/completions",
-);
+const voice = process.argv.includes("--voice");
 let requests = 0;
-const realModel = process.argv.includes("--model")
-  ? createRanker(
-      process.env.RIWEN_MODEL_URL ??
-        "http://127.0.0.1:18080/v1/chat/completions",
-    )
-  : undefined;
+const realModel = process.argv.includes("--model");
 const server = await startServer({
   port: 0,
   debounceMs: realModel ? 80 : 0,
-  ranker: async (request, signal) => {
+  onRequest: () => {
     requests++;
-    if (realModel) return realModel(request, signal);
-    await Bun.sleep(100);
-    return preferFirst ? 1 : request.candidates.indexOf("程式") + 1;
   },
-  corrector: async (request, signal) => {
-    requests++;
-    if (realModel) return correct(request, signal);
-    await Bun.sleep(100);
-    return "这是怎么回事";
-  },
+  ranker: realModel
+    ? undefined
+    : async (request) => {
+        await Bun.sleep(100);
+        return preferFirst ? 1 : request.candidates.indexOf("程式") + 1;
+      },
+  corrector: realModel
+    ? undefined
+    : async () => {
+        await Bun.sleep(100);
+        return "这是怎么回事";
+      },
 });
 try {
-  await prepareProfile(profile, server.port);
+  await prepareProfile(
+    profile,
+    server.port,
+    undefined,
+    "rime_frost_double_pinyin_flypy",
+  );
   const child = Bun.spawn(
     [
       "dbus-run-session",
@@ -47,9 +49,11 @@ try {
       profile,
       ...(preferFirst ? ["--prefer-first"] : []),
       ...(correction ? ["--correction"] : []),
+      ...(voice ? ["--voice"] : []),
     ],
     {
       cwd: project,
+      env: { ...process.env, RIWEN_VOICE: voice ? "1" : "0" },
       stdout: "inherit",
       stderr: "inherit",
     },

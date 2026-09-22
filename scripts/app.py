@@ -14,9 +14,10 @@ import time
 import urllib.parse
 import urllib.request
 
-PROJECT = Path(__file__).resolve().parents[1]
-CACHE = PROJECT / ".cache"
-CONTROL = CACHE / "app.sock"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from riwen.paths import PROJECT, DATA as CACHE, SESSION, PACKAGED, isolated_profile
+CONTROL = SESSION / "app.sock"
+STATUS = SESSION / "app-status.json"
 
 
 class Stopped(Exception):
@@ -77,9 +78,18 @@ class App:
         self.stopping = False
         self.switched = False
         self.previous = "rime"
-        self.env = dict(os.environ)
+        self.env = dict(os.environ, RIWEN_DATA_DIR=str(CACHE), PYTHONDONTWRITEBYTECODE="1")
         self.control = None
         self.log = None
+        self.state = {"phase": "starting", "message": "Starting Riwen", "schema": ""}
+
+    def report(self, phase, message):
+        self.state.update(phase=phase, message=message)
+        temporary = STATUS.with_suffix(".tmp")
+        temporary.write_text(json.dumps(self.state))
+        temporary.chmod(0o600)
+        temporary.replace(STATUS)
+        print(message, flush=True)
 
     def tick(self):
         if self.stopping:
@@ -91,9 +101,12 @@ class App:
         with connection:
             connection.settimeout(0.2)
             try:
-                if connection.recv(16) == b"stop":
+                command = connection.recv(16)
+                if command == b"status":
+                    connection.sendall(json.dumps(dict(self.state, running=True)).encode())
+                elif command == b"stop":
                     raise Stopped()
-            except socket.timeout:
+            except (socket.timeout, BrokenPipeError):
                 pass
 
     def spawn(self, args, ready=False):
@@ -108,7 +121,7 @@ class App:
         while child.poll() is None:
             self.tick()
         if child.returncode:
-            raise RuntimeError(f"Preparation failed: {' '.join(args)}. See {CACHE / 'app.log'}")
+            raise RuntimeError(f"Preparation failed: {' '.join(args)}. See {SESSION / 'app.log'}")
         self.children.remove(child)
 
     def wait_line(self, child, marker):
@@ -123,7 +136,7 @@ class App:
                         return
                     if not line:
                         break
-        raise RuntimeError(f"A Riwen service did not start. See {CACHE / 'app.log'}")
+        raise RuntimeError(f"A Riwen service did not start. See {SESSION / 'app.log'}")
 
     def prepare_model(self):
         endpoint = self.env.get("RIWEN_MODEL_URL", "http://127.0.0.1:18080/v1/chat/completions")
@@ -133,17 +146,17 @@ class App:
             return
         if "RIWEN_MODEL_URL" in self.env:
             raise RuntimeError("The configured Qwen endpoint is not healthy.")
-        print("Preparing Qwen (first download: about 1.3 GB)…", flush=True)
+        self.report("model", "Preparing Qwen (first download: about 1.3 GB)…")
         if not (CACHE / "models/qwen3-1.7b-q4_k_m.gguf").exists():
-            self.run("bun", "run", "model:download")
+            self.run(sys.executable, "scripts/runtime.py", "model-download")
         if not self.env.get("RIWEN_LLAMA_SERVER") and not (CACHE / "llama-vulkan/llama-b10964/llama-server").exists():
-            self.run("bun", "run", "runtime:download")
+            self.run(sys.executable, "scripts/runtime.py", "runtime-download")
         # A busy or unresponsive default endpoint belongs to someone else.
         port = free_port(socket.SOCK_STREAM)
         self.env["RIWEN_MODEL_PORT"] = str(port)
         endpoint = f"http://127.0.0.1:{port}/v1/chat/completions"
         self.env["RIWEN_MODEL_URL"] = endpoint
-        child = self.spawn(["bun", "run", "model:start"])
+        child = self.spawn([sys.executable, "scripts/runtime.py", "model-start", *(["--cpu"] if self.env.get("RIWEN_CPU") == "1" else [])])
         deadline = time.monotonic() + 120
         while time.monotonic() < deadline:
             self.tick()
@@ -151,26 +164,28 @@ class App:
                 break
             if model_ready(endpoint):
                 return
-        raise RuntimeError(f"Qwen did not become ready. See {CACHE / 'app.log'}")
+        raise RuntimeError(f"Qwen did not become ready. See {SESSION / 'app.log'}")
 
     def start(self):
-        for command in ("bun", "ibus", "g++", "rpm", "dnf", "rpm2cpio", "cpio", "curl", "tar"):
+        commands = ("ibus", "curl") + (() if PACKAGED else ("g++", "rpm", "dnf", "rpm2cpio", "cpio"))
+        for command in commands:
             if not shutil.which(command):
                 raise RuntimeError(f"Missing system tool: {command}. See docs/implementation/setup.md")
         self.previous = engine()
         print(f"Previous input method: {self.previous or '(none)'}", file=self.log, flush=True)
         if self.previous == "riwen":
             raise RuntimeError("Riwen is already selected. Stop that session before starting another.")
-        print("Preparing your 小鹤 input method…", flush=True)
+        self.report("preparing", "Preparing your Rime input method…")
         self.env["RIWEN_PORT"] = str(free_port(socket.SOCK_DGRAM))
-        profile = Path(self.env.get("RIWEN_PROFILE", CACHE / "app-profile")).resolve()
-        if not profile.is_relative_to(CACHE):
-            raise RuntimeError("Riwen profile must be inside the project's .cache")
+        profile = isolated_profile(self.env.get("RIWEN_PROFILE", CACHE / "app-profile"))
         self.env["RIWEN_PROFILE"] = str(profile)
-        self.run("bun", "run", "rime:prepare")
-        self.run("bun", "run", "ibus:prepare")
+        self.env.setdefault("RIWEN_VOICE", "1")
+        self.env["RIWEN_VOICE_CONTROL_DIR"] = str(SESSION)
+        self.run(sys.executable, "scripts/runtime.py", "rime-prepare")
+        self.run(sys.executable, "scripts/runtime.py", "ibus-prepare")
+        self.state["schema"] = json.loads((profile / "riwen-profile.json").read_text())["name"]
         self.prepare_model()
-        bridge = self.spawn(["bun", "src/server.ts"], ready=True)
+        bridge = self.spawn([sys.executable, "scripts/runtime.py", "bridge"], ready=True)
         self.wait_line(bridge, "Riwen listening")
         frontend = self.spawn([sys.executable, "src/ibus/main.py", "--profile", str(profile)], ready=True)
         self.wait_line(frontend, "Riwen engine registered")
@@ -178,11 +193,11 @@ class App:
         engine("riwen")
         if engine() != "riwen":
             raise RuntimeError("IBus did not select Riwen.")
-        print("Riwen is ready. Type normally; Ctrl+C or bun run stop restores your input method.", flush=True)
+        self.report("ready", "Riwen is ready. Type normally; Ctrl+C or riwen stop restores your input method.")
         while True:
             self.tick()
             if any(child.poll() is not None for child in self.children):
-                raise RuntimeError(f"A Riwen service stopped. See {CACHE / 'app.log'}")
+                raise RuntimeError(f"A Riwen service stopped. See {SESSION / 'app.log'}")
 
     def close(self):
         restore = False
@@ -225,8 +240,51 @@ class App:
 
 def main():
     parser = argparse.ArgumentParser(description="Start Riwen in one terminal; stop restores the previous input method.")
-    parser.add_argument("command", choices=("start", "stop"), nargs="?", default="start")
+    parser.add_argument("command", choices=("start", "stop", "status", "schemas", "voice-status", "voice-prepare", "voice-cancel"), nargs="?", default="start")
     args = parser.parse_args()
+    if args.command.startswith("voice-"):
+        if args.command == "voice-status":
+            try:
+                status = json.loads((SESSION / "voice-status.json").read_text())
+            except (OSError, ValueError):
+                status = {"phase": "stopped", "message": "Start Riwen to use voice input"}
+        else:
+            try:
+                with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as client:
+                    client.sendto(args.command.removeprefix("voice-").encode(), str(SESSION / "voice.sock"))
+                status = {"ok": True}
+            except OSError:
+                status = {"ok": False, "message": "Start Riwen and enable voice input first"}
+        print(json.dumps(status))
+        return 0
+    if args.command == "schemas":
+        return subprocess.call([sys.executable, str(PROJECT / "scripts/runtime.py"), "schemas"], cwd=PROJECT)
+    if args.command == "status":
+        try:
+            with socket.socket(socket.AF_UNIX) as client:
+                client.settimeout(2)
+                client.connect(str(CONTROL))
+                client.sendall(b"status")
+                print(client.recv(8192).decode())
+        except (OSError, ValueError):
+            state = {"phase": "stopped", "message": "Riwen is stopped"}
+            running = False
+            try:
+                with (SESSION / "app.lock").open("r") as lock:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        running = True
+            except FileNotFoundError:
+                pass
+            try:
+                saved = json.loads(STATUS.read_text())
+                if running or saved.get("phase") == "error":
+                    state = saved
+            except (OSError, ValueError):
+                pass
+            print(json.dumps(dict(state, running=running)))
+        return 0
     if args.command == "stop":
         try:
             with socket.socket(socket.AF_UNIX) as client:
@@ -237,17 +295,18 @@ def main():
         except (FileNotFoundError, ConnectionRefusedError):
             print("Riwen is not running.")
         return 0
-    CACHE.mkdir(parents=True, exist_ok=True)
-    with (CACHE / "app.lock").open("w") as lock:
+    CACHE.mkdir(parents=True, exist_ok=True, mode=0o700)
+    SESSION.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (SESSION / "app.lock").open("w") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            print("Riwen is already running. Use bun run stop to stop it.", file=sys.stderr)
+            print("Riwen is already running. Use riwen stop to stop it.", file=sys.stderr)
             return 1
         app = App()
         for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             signal.signal(sig, lambda *_: setattr(app, "stopping", True))
-        with socket.socket(socket.AF_UNIX) as control, (CACHE / "app.log").open("w") as log:
+        with socket.socket(socket.AF_UNIX) as control, (SESSION / "app.log").open("w") as log:
             CONTROL.unlink(missing_ok=True)
             control.bind(str(CONTROL))
             CONTROL.chmod(0o600)
@@ -255,15 +314,20 @@ def main():
             control.settimeout(0.1)
             app.control, app.log = control, log
             try:
+                app.report("starting", "Starting Riwen…")
                 app.start()
             except Stopped:
+                app.report("stopping", "Restoring your input method…")
                 pass
             except Exception as error:
+                app.report("error", str(error))
                 print(f"Riwen: {error}", file=sys.stderr)
                 return 1
             finally:
                 app.close()
                 CONTROL.unlink(missing_ok=True)
+                if app.state["phase"] != "error":
+                    app.report("stopped", "Riwen is stopped")
         print("Riwen stopped.")
     return 0
 

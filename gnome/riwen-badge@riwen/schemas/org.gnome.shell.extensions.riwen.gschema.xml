@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.riwen" path="/org/gnome/shell/extensions/riwen/">
+    <key name="voice-enabled" type="b"><default>true</default><summary>Enable local F10 voice dictation</summary></key>
+    <key name="assistant-enabled" type="b"><default>true</default><summary>Start Riwen when the extension is enabled</summary></key>
+    <key name="schema-id" type="s"><default>''</default><summary>Rime scheme, empty follows the user's default</summary></key>
+    <key name="rime-source" type="s"><default>''</default><summary>Rime profile directory, empty uses the IBus default</summary></key>
+    <key name="correction" type="b"><default>true</default><summary>Offer limited phrase corrections for phonetic schemes</summary></key>
+    <key name="show-badges" type="b"><default>true</default><summary>Show colored Qwen badges</summary></key>
+    <key name="cpu" type="b"><default>false</default><summary>Run Qwen on the CPU instead of Vulkan</summary></key>
+  </schema>
+</schemalist>

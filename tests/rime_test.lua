@@ -150,6 +150,19 @@ test("a fallback stops pending status without adding a Qwen badge", function()
   assert(properties.riwen_choice == "" and not state.applied)
   assert(run(values)[1] == values[1])
 end)
+test("scheme alphabet and short table codes work without enabling phonetic correction", function()
+  fresh()
+  local old_alphabet, old_minimum, old_correction = state.alphabet, state.min_input, state.correction
+  state.alphabet, state.min_input, state.correction = "ab;123", 1, false
+  context.input, context.caret_pos = "a;3", 3
+  local values = candidates()
+  for _, candidate in ipairs(values) do candidate.type, candidate._end = "table", 3 end
+  run(values)
+  assert(#sent == 1 and state.pending.kind == "R1")
+  respond(2); riwen.processor.func(key("F8"), processor)
+  assert(run(values)[1].text == "程式")
+  state.alphabet, state.min_input, state.correction = old_alphabet, old_minimum, old_correction
+end)
 test("shutdown disconnects callbacks and releases socket exactly when both components finish", function()
   riwen.processor.fini(processor); assert(not closed)
   riwen.filter.fini(filter); assert(closed and disconnected)

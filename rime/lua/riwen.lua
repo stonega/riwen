@@ -61,6 +61,10 @@ local function get_state(env)
   local mode = context:get_property("riwen_mode")
   state = { history = "", counter = 0, last = 0, refs = 0, context = context,
             mode = (mode == "auto" or mode == "off") and mode or "manual" }
+  local config = env.engine.schema.config
+  state.alphabet = config.get_string and config:get_string("riwen/alphabet") or "abcdefghijklmnopqrstuvwxyz'"
+  state.correction = not config.get_bool or config:get_bool("riwen/correction") ~= false
+  state.min_input = config:get_int("riwen/min_input") or 4
   if ok then
     local udp = socket.udp()
     if udp then
@@ -206,7 +210,7 @@ end
 
 local function eligible(candidate)
   return (candidate.type == "phrase" or candidate.type == "user_phrase" or
-          candidate.type == "sentence") and candidate.quality < 90 and
+          candidate.type == "sentence" or candidate.type == "table") and candidate.quality < 90 and
          #candidate.text <= 192
 end
 
@@ -228,10 +232,13 @@ function M.filter.func(translation, env)
   end
   local input = context.input
   local first = candidates[1]
-  local base_valid = state and state.mode ~= "off" and state.udp and #input >= 4 and
-    #input <= 64 and not input:find("[^a-z']") and context.caret_pos == #input and
+  local valid_input = state and #input >= state.min_input and #input <= 64 and not input:find("[^ -~]")
+  for char in input:gmatch(".") do
+    if not state or not state.alphabet:find(char, 1, true) then valid_input = false; break end
+  end
+  local base_valid = state and state.mode ~= "off" and state.udp and valid_input and context.caret_pos == #input and
     first and eligible(first)
-  local generate = base_valid and first.start == 0 and first._end == #input and
+  local generate = base_valid and state.correction and first.type ~= "table" and first.start == 0 and first._end == #input and
     #first.text >= 18 and #first.text <= 72 and han(first.text)
   local valid = base_valid and #state.history > 0 and #candidates >= 2
   if valid and not generate then
@@ -244,7 +251,8 @@ function M.filter.func(translation, env)
     local fields = { hex(state.history), hex(input) }
     local kind = generate and "R2" or "R1"
     if generate then
-      local pinyin = (first.preedit or ""):gsub("[^a-z' ]", ""):gsub(" +", " "):match("^%s*(.-)%s*$")
+      local pinyin = (first.preedit or ""):gsub("[%c]", " ")
+      if #pinyin > 256 then pinyin = "" end
       fields[#fields + 1] = hex(pinyin)
       fields[#fields + 1] = hex(first.text)
     else

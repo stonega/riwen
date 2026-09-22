@@ -1,0 +1,9 @@
+{
+  "uuid": "riwen-badge@riwen",
+  "name": "Riwen — Local Qwen for Rime",
+  "description": "Local Qwen ranking, phrase correction and voice dictation for Rime, with scheme selection and model setup.",
+  "settings-schema": "org.gnome.shell.extensions.riwen",
+  "shell-version": ["51"],
+  "url": "https://github.com/stonega/riwen",
+  "version": 3
+}

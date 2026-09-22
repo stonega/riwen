@@ -81,12 +81,23 @@ const char* riwen_state(uint64_t session) {
       << ",\"preedit\":" << json(has_context ? context.composition.preedit : "")
       << ",\"cursor\":" << (has_context ? context.composition.cursor_pos : 0)
       << ",\"page\":" << (has_context ? context.menu.page_no : 0)
+      << ",\"page_size\":" << (has_context ? context.menu.page_size : 5)
       << ",\"selected\":" << (has_context ? context.menu.highlighted_candidate_index : 0)
       << ",\"candidates\":[";
   if (has_context) {
     for (int i = 0; i < context.menu.num_candidates; ++i) {
       if (i) out << ',';
       out << json(context.menu.candidates[i].text);
+    }
+  }
+  out << "],\"labels\":[";
+  if (has_context) {
+    const std::string keys = context.menu.select_keys ? context.menu.select_keys : "";
+    for (int i = 0; i < context.menu.page_size; ++i) {
+      if (i) out << ',';
+      if (context.select_labels && context.select_labels[i]) out << json(context.select_labels[i]);
+      else if (static_cast<size_t>(i) < keys.size()) out << json(keys.substr(i, 1).c_str());
+      else out << json(std::to_string((i + 1) % 10).c_str());
     }
   }
   out << "]}";
