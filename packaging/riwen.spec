@@ -2,7 +2,7 @@
 %global debug_package %{nil}
 %global _python_bytecompile_extra 0
 %global __provides_exclude_from ^%{_libdir}/riwen/.*$
-%{!?riwen_version:%global riwen_version 0.1.0}
+%{!?riwen_version:%global riwen_version 0.1.2}
 %{!?riwen_rime_include:%global riwen_rime_include %{_includedir}}
 %global extension_uuid riwen-badge@riwen
 

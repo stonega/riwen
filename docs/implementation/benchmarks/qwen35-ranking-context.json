@@ -1,0 +1,264 @@
+{
+  "model": "qwen3.5-4b",
+  "timestamp": "2026-10-23T08:57:06.105596+00:00",
+  "firstRequestMs": 987,
+  "correct": 36,
+  "total": 36,
+  "p50Ms": 607,
+  "p95Ms": 740,
+  "note": "Synthetic model-only benchmark; excludes debounce, Rime/IBus, and real typing. Not an accuracy evaluation.",
+  "results": [
+    {
+      "pass": 0,
+      "case": 1,
+      "selected": "程式",
+      "correct": true,
+      "ms": 484
+    },
+    {
+      "pass": 0,
+      "case": 2,
+      "selected": "城市",
+      "correct": true,
+      "ms": 557
+    },
+    {
+      "pass": 0,
+      "case": 3,
+      "selected": "公式",
+      "correct": true,
+      "ms": 627
+    },
+    {
+      "pass": 0,
+      "case": 4,
+      "selected": "共识",
+      "correct": true,
+      "ms": 654
+    },
+    {
+      "pass": 0,
+      "case": 5,
+      "selected": "散步",
+      "correct": true,
+      "ms": 719
+    },
+    {
+      "pass": 0,
+      "case": 6,
+      "selected": "三步",
+      "correct": true,
+      "ms": 572
+    },
+    {
+      "pass": 0,
+      "case": 7,
+      "selected": "签字",
+      "correct": true,
+      "ms": 563
+    },
+    {
+      "pass": 0,
+      "case": 8,
+      "selected": "铅字",
+      "correct": true,
+      "ms": 587
+    },
+    {
+      "pass": 0,
+      "case": 9,
+      "selected": "触发",
+      "correct": true,
+      "ms": 545
+    },
+    {
+      "pass": 0,
+      "case": 10,
+      "selected": "出发",
+      "correct": true,
+      "ms": 639
+    },
+    {
+      "pass": 0,
+      "case": 11,
+      "selected": "处罚",
+      "correct": true,
+      "ms": 589
+    },
+    {
+      "pass": 0,
+      "case": 12,
+      "selected": "除法",
+      "correct": true,
+      "ms": 616
+    },
+    {
+      "pass": 1,
+      "case": 1,
+      "selected": "程式",
+      "correct": true,
+      "ms": 636
+    },
+    {
+      "pass": 1,
+      "case": 2,
+      "selected": "城市",
+      "correct": true,
+      "ms": 633
+    },
+    {
+      "pass": 1,
+      "case": 3,
+      "selected": "公式",
+      "correct": true,
+      "ms": 617
+    },
+    {
+      "pass": 1,
+      "case": 4,
+      "selected": "共识",
+      "correct": true,
+      "ms": 558
+    },
+    {
+      "pass": 1,
+      "case": 5,
+      "selected": "散步",
+      "correct": true,
+      "ms": 740
+    },
+    {
+      "pass": 1,
+      "case": 6,
+      "selected": "三步",
+      "correct": true,
+      "ms": 610
+    },
+    {
+      "pass": 1,
+      "case": 7,
+      "selected": "签字",
+      "correct": true,
+      "ms": 587
+    },
+    {
+      "pass": 1,
+      "case": 8,
+      "selected": "铅字",
+      "correct": true,
+      "ms": 587
+    },
+    {
+      "pass": 1,
+      "case": 9,
+      "selected": "触发",
+      "correct": true,
+      "ms": 561
+    },
+    {
+      "pass": 1,
+      "case": 10,
+      "selected": "出发",
+      "correct": true,
+      "ms": 601
+    },
+    {
+      "pass": 1,
+      "case": 11,
+      "selected": "处罚",
+      "correct": true,
+      "ms": 613
+    },
+    {
+      "pass": 1,
+      "case": 12,
+      "selected": "除法",
+      "correct": true,
+      "ms": 607
+    },
+    {
+      "pass": 2,
+      "case": 1,
+      "selected": "程式",
+      "correct": true,
+      "ms": 598
+    },
+    {
+      "pass": 2,
+      "case": 2,
+      "selected": "城市",
+      "correct": true,
+      "ms": 640
+    },
+    {
+      "pass": 2,
+      "case": 3,
+      "selected": "公式",
+      "correct": true,
+      "ms": 655
+    },
+    {
+      "pass": 2,
+      "case": 4,
+      "selected": "共识",
+      "correct": true,
+      "ms": 539
+    },
+    {
+      "pass": 2,
+      "case": 5,
+      "selected": "散步",
+      "correct": true,
+      "ms": 747
+    },
+    {
+      "pass": 2,
+      "case": 6,
+      "selected": "三步",
+      "correct": true,
+      "ms": 609
+    },
+    {
+      "pass": 2,
+      "case": 7,
+      "selected": "签字",
+      "correct": true,
+      "ms": 577
+    },
+    {
+      "pass": 2,
+      "case": 8,
+      "selected": "铅字",
+      "correct": true,
+      "ms": 638
+    },
+    {
+      "pass": 2,
+      "case": 9,
+      "selected": "触发",
+      "correct": true,
+      "ms": 629
+    },
+    {
+      "pass": 2,
+      "case": 10,
+      "selected": "出发",
+      "correct": true,
+      "ms": 587
+    },
+    {
+      "pass": 2,
+      "case": 11,
+      "selected": "处罚",
+      "correct": true,
+      "ms": 621
+    },
+    {
+      "pass": 2,
+      "case": 12,
+      "selected": "除法",
+      "correct": true,
+      "ms": 595
+    }
+  ]
+}

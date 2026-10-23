@@ -42,11 +42,16 @@ local function tail(s, max_bytes)
   return s:sub(start)
 end
 
-local function reset(state)
-  state.history, state.pending, state.ready, state.applied = "", nil, nil, nil
+local function invalidate(state)
+  state.pending, state.ready, state.applied = nil, nil, nil
   state.frozen = false
   state.context:set_property("riwen_choice", "")
   status(state, "idle")
+end
+
+local function reset(state)
+  state.history = ""
+  invalidate(state)
 end
 
 local function get_state(env)
@@ -64,7 +69,7 @@ local function get_state(env)
   local config = env.engine.schema.config
   state.alphabet = config.get_string and config:get_string("riwen/alphabet") or "abcdefghijklmnopqrstuvwxyz'"
   state.correction = not config.get_bool or config:get_bool("riwen/correction") ~= false
-  state.min_input = config:get_int("riwen/min_input") or 4
+  state.min_input = config:get_int("riwen/min_input") or 2
   if ok then
     local udp = socket.udp()
     if udp then
@@ -178,13 +183,21 @@ function M.processor.func(key, env)
     context:refresh_non_confirmed_composition()
     return 1
   end
-  -- Edits/navigation invalidate commit history; exact surrounding text is unknown.
+  -- Plain edits inside Rime's composition do not alter preceding commits.
   local repr = key:repr()
   if context:has_menu() and (repr == "Up" or repr == "Down" or repr == "Tab" or
      repr == "Shift+Tab" or repr == "Prior" or repr == "Next" or repr == "minus" or repr == "equal") then
     state.frozen = true
     status(state, "frozen")
   end
+  local backward = repr == "BackSpace" or repr == "Left" or repr == "Home"
+  local forward = repr == "Delete" or repr == "Right" or repr == "End"
+  if #context.input > 0 and ((backward and context.caret_pos > 0) or
+     (forward and context.caret_pos < #context.input)) then
+    invalidate(state)
+    return 2
+  end
+  -- Application edits/shortcuts still clear history; surrounding text is unknown.
   if repr:find("BackSpace", 1, true) or repr:find("Delete", 1, true) or
      repr:find("Left", 1, true) or repr:find("Right", 1, true) or
      repr:find("Home", 1, true) or repr:find("End", 1, true) or
@@ -240,12 +253,15 @@ function M.filter.func(translation, env)
     first and eligible(first)
   local generate = base_valid and state.correction and first.type ~= "table" and first.start == 0 and first._end == #input and
     #first.text >= 18 and #first.text <= 72 and han(first.text)
-  local valid = base_valid and #state.history > 0 and #candidates >= 2
+  local valid = base_valid and #candidates >= 2
+  local rank_count = 0
   if valid and not generate then
     for _, candidate in ipairs(candidates) do
       if not eligible(candidate) or candidate.start ~= first.start or
-         candidate._end ~= first._end then valid = false; break end
+         candidate._end ~= first._end then break end
+      rank_count = rank_count + 1
     end
+    valid = rank_count >= 2
   end
   if valid or generate then
     local fields = { hex(state.history), hex(input) }
@@ -256,9 +272,13 @@ function M.filter.func(translation, env)
       fields[#fields + 1] = hex(pinyin)
       fields[#fields + 1] = hex(first.text)
     else
-      for _, candidate in ipairs(candidates) do fields[#fields + 1] = hex(candidate.text) end
+      for index = 1, rank_count do fields[#fields + 1] = hex(candidates[index].text) end
     end
-    local key = kind .. "\t" .. table.concat(fields, "\t")
+    local key = kind .. "\t" .. rank_count .. "\t" .. table.concat(fields, "\t")
+    if not generate then
+      -- A change in the untouched tail must invalidate an earlier result too.
+      for index = rank_count + 1, #candidates do key = key .. "\t" .. hex(candidates[index].text) end
+    end
     if state.applied and state.applied.key == key then
       local best
       if state.applied.correction then
@@ -281,8 +301,8 @@ function M.filter.func(translation, env)
     elseif not state.pending or state.pending.key ~= key then
       state.counter = state.counter + 1
       local id = tostring(state.counter)
-      state.pending = { id = id, key = key, input = input, count = #candidates, at = socket.gettime(),
-                        ttl = generate and 4 or 2, kind = kind, original = first.text }
+      state.pending = { id = id, key = key, input = input, count = generate and #candidates or rank_count, at = socket.gettime(),
+                        ttl = generate and 6 or 4, kind = kind, original = first.text }
       state.ready, state.applied = nil, nil
       state.frozen = false
       state.udp:send(kind .. "\t" .. id .. "\t" .. table.concat(fields, "\t"))

@@ -1,0 +1,74 @@
+[
+  {
+    "original": "你好这是怎抹灰是",
+    "input": "nihcveuizfmohvui",
+    "pinyin": "ni hao zhe shi zen mo hui shi",
+    "expected": "你好这是怎么回事"
+  },
+  {
+    "original": "这是怎忙会是",
+    "input": "veuizfmhhvui",
+    "pinyin": "zhe shi zen mang hui shi",
+    "expected": "这是怎么回事"
+  },
+  {
+    "original": "今天心晴很好",
+    "input": "jintianxinqinghenhao",
+    "pinyin": "jin tian xin qing hen hao",
+    "expected": "今天心情很好"
+  },
+  {
+    "original": "我门去吃晚犯",
+    "input": "womenquchiwanfan",
+    "pinyin": "wo men qu chi wan fan",
+    "expected": "我们去吃晚饭"
+  },
+  {
+    "original": "再见我们明天建",
+    "input": "zaijianwomenmingtianjian",
+    "pinyin": "zai jian wo men ming tian jian",
+    "expected": "再见我们明天见"
+  },
+  {
+    "original": "这个问提很简单",
+    "input": "zhegewentihenjiandan",
+    "pinyin": "zhe ge wen ti hen jian dan",
+    "expected": "这个问题很简单"
+  },
+  {
+    "original": "他以经到了公司",
+    "input": "tayijingdaolegongsi",
+    "pinyin": "ta yi jing dao le gong si",
+    "expected": "他已经到了公司"
+  },
+  {
+    "original": "请把文见发给我",
+    "input": "qingbawenjianfageiwo",
+    "pinyin": "qing ba wen jian fa gei wo",
+    "expected": "请把文件发给我"
+  },
+  {
+    "original": "你好这是怎么回事",
+    "input": "nihaozheshizenmehuishi",
+    "pinyin": "ni hao zhe shi zen me hui shi",
+    "expected": "你好这是怎么回事"
+  },
+  {
+    "original": "今天天气非常好",
+    "input": "jintiantianqifeichanghao",
+    "pinyin": "jin tian tian qi fei chang hao",
+    "expected": "今天天气非常好"
+  },
+  {
+    "original": "我想喝一杯咖啡",
+    "input": "woxiangheyibeikafei",
+    "pinyin": "wo xiang he yi bei ka fei",
+    "expected": "我想喝一杯咖啡"
+  },
+  {
+    "original": "我们正在给墙抹灰",
+    "input": "womenzhengzaigeiqiangmohui",
+    "pinyin": "wo men zheng zai gei qiang mo hui",
+    "expected": "我们正在给墙抹灰"
+  }
+]

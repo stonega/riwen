@@ -64,8 +64,11 @@ end
 local count = 0
 local function test(name, fn) fn(); count = count + 1; print("ok " .. count .. " - " .. name) end
 
-test("no inference without context", function()
-  run(candidates()); assert(#sent == 0)
+test("first phrase requests ranking without previous commits", function()
+  riwen.processor.func(key("i"), processor)
+  run(candidates()); assert(#sent == 1 and state.history == "")
+  respond(2); riwen.processor.func(key("F8"), processor)
+  assert(run(candidates())[1].text == "程式")
 end)
 test("request is asynchronous and Space never silently applies a late result", function()
   fresh()
@@ -102,7 +105,7 @@ end)
 test("expired responses and invalid indices are ignored", function()
   fresh(); run(candidates()); respond(9)
   riwen.processor.func(key("F8"), processor); assert(not state.applied)
-  run(candidates()); respond(2); now = now + 3
+  run(candidates()); respond(2); now = now + 5
   riwen.processor.func(key("F8"), processor); assert(not state.applied)
 end)
 test("custom phrases, high priority candidates, and mixed segments are untouched", function()
@@ -113,15 +116,68 @@ test("custom phrases, high priority candidates, and mixed segments are untouched
     assert(#sent == 0 and result[1] == values[1])
   end
 end)
+test("ordinary candidate prefix ranks while later custom candidates keep their positions", function()
+  fresh(); local values = candidates(); values[4].type = "user_table"
+  local result = run(values)
+  assert(#sent == 1 and state.pending.count == 3 and result[4] == values[4])
+  respond(2); riwen.processor.func(key("F8"), processor)
+  result = run(values)
+  assert(result[1] == values[2] and result[4] == values[4])
+  values[4].text = "new custom phrase"
+  assert(run(values)[1] == values[1] and #sent == 2)
+end)
 test("auxiliary codes and mid-composition cursor positions bypass ranking", function()
   fresh(); context.input = "igui`a"; context.caret_pos = 6
   run(candidates()); assert(#sent == 0)
   context.input = "igui"; context.caret_pos = 2
   run(candidates()); assert(#sent == 0)
 end)
-test("editing, reset, and inactivity clear context", function()
+test("composition edits preserve preceding commits and invalidate old choices", function()
+  for _, repr in ipairs({ "BackSpace", "Delete", "Left", "Right", "Home", "End" }) do
+    fresh(); run(candidates()); respond(2)
+    local history, id = state.history, state.pending.id
+    context.caret_pos = 2
+    riwen.processor.func(key(repr), processor)
+    assert(state.history == history, repr .. " discarded preceding commits")
+    assert(not state.pending and not state.ready and not state.applied)
+    context.caret_pos = #context.input
+    run(candidates())
+    assert(state.pending.id ~= id)
+    incoming = {}; respond(2, id)
+    riwen.processor.func(key("F8"), processor)
+    assert(not state.applied, "an edit reused a stale choice")
+  end
+end)
+test("editing at a composition boundary conservatively clears context", function()
+  for _, edit in ipairs({ { "BackSpace", 0 }, { "Left", 0 }, { "Delete", 4 }, { "Right", 4 } }) do
+    fresh(); context.caret_pos = edit[2]
+    riwen.processor.func(key(edit[1]), processor)
+    assert(state.history == "")
+  end
+end)
+test("two-key script inputs can rank but single initials do not", function()
+  fresh(); context.input, context.caret_pos = "hf", 2
+  local values = candidates()
+  for _, candidate in ipairs(values) do candidate._end = 2 end
+  run(values)
+  assert(#sent == 1 and state.pending.count == 8)
+  respond(2); riwen.processor.func(key("F8"), processor)
+  assert(run(values)[1] == values[2])
+  fresh(); context.input, context.caret_pos = "h", 1
+  run(values); assert(#sent == 0)
+end)
+test("slower rankings remain valid within the extended expiry only", function()
+  for _, age in ipairs({ 2.5, 4.1 }) do
+    fresh(); run(candidates()); respond(2); now = now + age
+    riwen.processor.func(key("F8"), processor)
+    if age < 4 then assert(state.applied and state.applied.best == 2)
+    else assert(not state.applied) end
+  end
+end)
+test("document editing, reset, and inactivity clear context", function()
   for _, repr in ipairs({ "BackSpace", "Left", "Control+v", "F9" }) do
-    fresh(); riwen.processor.func(key(repr), processor); assert(state.history == "")
+    fresh(); context.input, context.caret_pos = "", 0
+    riwen.processor.func(key(repr), processor); assert(state.history == "")
   end
   fresh(); now = now + 31
   riwen.processor.func(key("a"), processor); assert(state.history == "")
@@ -162,6 +218,23 @@ test("scheme alphabet and short table codes work without enabling phonetic corre
   respond(2); riwen.processor.func(key("F8"), processor)
   assert(run(values)[1].text == "程式")
   state.alphabet, state.min_input, state.correction = old_alphabet, old_minimum, old_correction
+end)
+test("slower corrections can arrive after four seconds but expired replies are rejected", function()
+  for _, age in ipairs({ 4.5, 6.1 }) do
+    fresh()
+    context.input = "nihcveuizfmohvui"
+    context.caret_pos = #context.input
+    local original = { text = "你好这是怎抹灰是", type = "sentence", quality = 1,
+      start = 0, _end = #context.input, preedit = "ni hao zhe shi zen mo hui shi" }
+    run({ original })
+    assert(state.pending.kind == "R2")
+    local encoded = ("你好这是怎么回事"):gsub(".", function(c) return string.format("%02x", c:byte()) end)
+    incoming[#incoming + 1] = "R2\t" .. state.pending.id .. "\t" .. encoded .. "\tok"
+    now = now + age
+    riwen.processor.func(key("F8"), processor)
+    if age < 5 then assert(state.applied and state.applied.correction == "你好这是怎么回事")
+    else assert(not state.applied) end
+  end
 end)
 test("shutdown disconnects callbacks and releases socket exactly when both components finish", function()
   riwen.processor.fini(processor); assert(not closed)

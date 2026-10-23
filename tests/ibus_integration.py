@@ -15,9 +15,12 @@ profile = Path(sys.argv[1]).resolve()
 launcher = "--launcher" in sys.argv
 chosen_word = "城市" if "--prefer-first" in sys.argv else "程式"
 correction = "--correction" in sys.argv
+trigger = "--trigger" in sys.argv
 voice = "--voice" in sys.argv
 if correction:
-    chosen_word = "这是怎么回事"
+    chosen_word = "你好这是怎么回事"
+elif trigger:
+    chosen_word = "触发"
 project = Path(os.environ.get("RIWEN_TEST_APP", Path(__file__).resolve().parents[1]))
 address = f"unix:path={profile}/ibus.sock"
 env = dict(os.environ, IBUS_ADDRESS=address,
@@ -118,31 +121,45 @@ try:
         for char in text:
             key(ord(char))
 
-    type_input("woxpleyige")
-    key(32)
-    wait_for(lambda: commits and commits[-1] == "我写了一个", "native context commit")
-    type_input("veuizfmhhvui" if correction else "igui")
-    wait_for(lambda: menu and menu[0] == chosen_word + " 〔Qwen〕", "automatic idle Qwen badge")
+    if trigger:
+        for spelling in ("xrci", "hf", "bu", "vyqt"):
+            type_input(spelling)
+            key(32)
+        key(44)
+        for spelling in ("qp", "bu", "jkih"):
+            type_input(spelling)
+            key(32)
+        assert "".join(commits) == "选词很不准确，且不经常", commits
+        type_input("iufx")
+        key(IBus.KEY_BackSpace)
+        type_input("a")
+    elif not correction:
+        type_input("woxpleyige")
+        key(32)
+        wait_for(lambda: commits and commits[-1] == "我写了一个", "native context commit")
+    if not trigger:
+        type_input("nihcveuizfmohvui" if correction else "igui")
+    try:
+        wait_for(lambda: menu and menu[0] == chosen_word + " 〔Qwen〕", "automatic idle Qwen badge", seconds=7 if correction else 5)
+    except AssertionError as error:
+        raise AssertionError(f"{error}; fixture menu: {menu!r}") from error
     assert all("〔Qwen〕" not in candidate for candidate in menu[1:]), menu
     if correction:
-        assert "这是怎忙会是" in menu, "Original phrase disappeared"
+        assert "你好这是怎抹灰是" in menu, "Original phrase disappeared"
     key(32)
     wait_for(lambda: commits[-1] == chosen_word, "suggestion commits without its badge")
     print("PASS: idle menu shows one Qwen badge; committed text has no badge", flush=True)
 
-    # Focus changes clear commit history; a new field must not inherit it.
+    # Focus changes clear commit history; the new field can still get a
+    # first-phrase ranking without inheriting the previous field's text.
     context.focus_out()
     context.focus_in()
     drain()
     type_input("igui")
     wait_for(lambda: bool(menu), "new-field menu")
-    baseline = list(menu)
-    assert all("〔Qwen〕" not in candidate for candidate in baseline), baseline
-    until = time.monotonic() + 0.35
-    while time.monotonic() < until:
-        drain(); time.sleep(0.005)
-    assert menu == baseline, menu
-    print("PASS: focus change drops previous context", flush=True)
+    wait_for(lambda: menu and menu[0].endswith(" 〔Qwen〕"), "first-phrase ranking in the new field")
+    assert menu[0] in ("城市 〔Qwen〕", "程式 〔Qwen〕"), menu
+    print("PASS: focus change drops previous context and ranks the first phrase", flush=True)
 
     if voice:
         context.reset()

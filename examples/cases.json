@@ -46,5 +46,29 @@
     "input": "qmzi",
     "candidates": ["签字", "钳子", "铅字"],
     "expected": "铅字"
+  },
+  {
+    "context": "选词很不准确，且不经常",
+    "input": "iufa",
+    "candidates": ["出发", "触发", "处罚", "除法"],
+    "expected": "触发"
+  },
+  {
+    "context": "明天早上八点准时",
+    "input": "iufa",
+    "candidates": ["出发", "触发", "处罚", "除法"],
+    "expected": "出发"
+  },
+  {
+    "context": "违反规定就应该受到",
+    "input": "iufa",
+    "candidates": ["出发", "触发", "处罚", "除法"],
+    "expected": "处罚"
+  },
+  {
+    "context": "小学生正在学习",
+    "input": "iufa",
+    "candidates": ["出发", "触发", "处罚", "除法"],
+    "expected": "除法"
   }
 ]

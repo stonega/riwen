@@ -39,7 +39,7 @@ def decode_request(packet):
     request = Request(identifier, decode_hex(context, 768), decode_hex(raw, 64),
                       [decode_hex(item, 192) for item in candidates],
                       decode_hex(pinyin, 256) if correction else None)
-    if (not correction and not request.context.strip()
+    if (not correction and request.context and not request.context.strip()
             or not re.fullmatch(r"[\x20-\x7e]{1,64}", request.input)
             or any(not value.strip() for value in request.candidates)):
         raise ValueError("Empty context/candidate or unsupported input")

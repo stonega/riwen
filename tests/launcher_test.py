@@ -1,6 +1,7 @@
 """Failure/ownership checks complement the private-bus launcher integration."""
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import signal
@@ -8,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location("riwen_app", Path(__file__).resolve().parents[1] / "scripts/app.py")
 app_module = importlib.util.module_from_spec(spec)
@@ -16,6 +17,23 @@ spec.loader.exec_module(app_module)
 
 
 class LauncherTest(unittest.TestCase):
+    def test_model_health_requires_the_selected_model(self):
+        endpoint = "http://127.0.0.1:18080/v1/chat/completions"
+        for advertised, selected, expected in (
+            ("qwen3-1.7b", app_module.DEFAULT_MODEL, False),
+            (app_module.DEFAULT_MODEL, app_module.DEFAULT_MODEL, True),
+            ("qwen3-1.7b", "qwen3-1.7b", True),
+            ("my-local-model", "my-local-model", True),
+        ):
+            with self.subTest(advertised=advertised, selected=selected):
+                opener = Mock()
+                opener.open.side_effect = [
+                    io.BytesIO(b'{"status":"ok"}'),
+                    io.BytesIO(json.dumps({"data": [{"id": advertised}]}).encode()),
+                ]
+                with patch.object(app_module.urllib.request, "build_opener", return_value=opener):
+                    self.assertEqual(app_module.model_ready(endpoint, selected), expected)
+
     def test_manual_source_selection_is_preserved(self):
         app = app_module.App()
         app.log = io.StringIO()

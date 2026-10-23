@@ -13,7 +13,7 @@ export default class RiwenPreferences extends ExtensionPreferences {
     const general = new Adw.PreferencesGroup({
       title: "Local Qwen assistance",
       description:
-        "Use the Riwen panel menu to select a Rime scheme. First start downloads about 1.3 GB. All typing stays on this computer.",
+        "Use the Riwen panel menu to select a Rime scheme. First start downloads Qwen3.5-4B (about 2.74 GB). All typing stays on this computer.",
     });
     page.add(general);
     for (const [key, title, subtitle] of [

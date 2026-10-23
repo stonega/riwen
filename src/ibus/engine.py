@@ -62,7 +62,7 @@ class RiwenEngine(IBus.Engine):
     def schedule(self, state):
         self.stop_timer()
         if self.focused and not self.private and state["status"] in ("pending", "pending-correction"):
-            self.poll_until = time.monotonic() + (4 if state["status"] == "pending-correction" else 2)
+            self.poll_until = time.monotonic() + (6 if state["status"] == "pending-correction" else 4)
             self.timer = GLib.timeout_add(40, self.poll, priority=GLib.PRIORITY_DEFAULT_IDLE)
 
     def poll(self):

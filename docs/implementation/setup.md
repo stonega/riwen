@@ -8,7 +8,7 @@ where the package will run; it contains a native librime bridge.
 ```sh
 python3 scripts/package-rpm.py
 python3 tests/rpm-package.py
-sudo dnf install ./dist/riwen-0.1.0-1.fc45.x86_64.rpm
+sudo dnf install ./dist/riwen-0.1.2-1.fc45.x86_64.rpm
 ```
 
 The builder needs Python 3, `rpm-build`, GCC C++, `glib2`, and librime headers.
@@ -48,8 +48,11 @@ below the data root. `RIWEN_DATA_DIR` and `RIWEN_SESSION_DIR` override those pat
 Checkout/ZIP runs retain `.cache` below the app root. Stop Riwen before upgrading;
 sign out/back in to reload extension code. Uninstall leaves per-user data intact.
 
-The launcher reuses a healthy Qwen3-1.7B server on port 18080, or starts an owned
-model on an available port. It never stops a reused model. A lock prevents duplicate
+The default text model is **Qwen3.5-4B Q4_K_M** (about 2.74 GB), with thinking
+disabled. The launcher reuses a healthy server on port 18080 only when it advertises
+the selected model ID (`qwen3.5-4b` by default), or starts an owned model on an
+available port. An older 1.7B server is not silently reused for a 3.5 session.
+It never stops a reused model. A lock prevents duplicate
 sessions; a user-only Unix socket receives stop/status requests. Manual input-source
 changes during a session are preserved at shutdown. Typing is never logged.
 
@@ -137,6 +140,29 @@ The commands below are for development and troubleshooting.
 
 ## Model runtime
 
+`RIWEN_MODEL` selects both the download and the runtime alias. It defaults to
+`qwen3.5-4b`; `qwen3.5-2b` selects the 1.28 GB variant and `qwen3-1.7b` retains
+the older 1.3 GB alternative. All downloads are SHA-256 verified and remain
+separate files. After upgrading from
+1.7B, the next start prepares 3.5-4B; the old weights remain available.
+
+```sh
+python3 scripts/runtime.py model-download
+python3 scripts/runtime.py model-start
+# Smaller Qwen3.5: use the same selection for download and start.
+RIWEN_MODEL=qwen3.5-2b python3 scripts/runtime.py model-download
+RIWEN_MODEL=qwen3.5-2b python3 scripts/app.py start
+# Legacy model:
+RIWEN_MODEL=qwen3-1.7b python3 scripts/runtime.py model-download
+RIWEN_MODEL=qwen3-1.7b python3 scripts/app.py start
+```
+
+For your own loopback server, set `RIWEN_MODEL_URL` and `RIWEN_MODEL` to the exact
+ID it advertises at `/v1/models`. The client, health check and benchmarks use that
+same ID. Custom IDs require an external server; the managed downloader supports
+only the three pinned models above. The extension uses the default unless its
+launch environment explicitly sets `RIWEN_MODEL`.
+
 `python3 scripts/runtime.py runtime-download` installs a checksum-pinned upstream llama.cpp b10964
 Vulkan release into `.cache/llama-vulkan`. It recognizes both the Intel integrated
 GPU and the RTX 4060. The launcher prefers this cached runtime and selects NVIDIA
@@ -150,7 +176,8 @@ explicit CPU baseline. Model download verifies SHA-256 and reuses valid files.
 An interrupted `.part` file is rejected: remove it and retry.
 
 The launcher uses 2,048 context tokens, one slot, six CPU threads, thinking disabled,
-and port 18080. The bridge's deadline is 1.2 seconds. Slow backends fall back.
+and port 18080. Ranking has a three-second bridge deadline and a four-second
+Lua/frontend expiry. Slow backends fall back.
 
 ## Checkout native runtime and IBus frontend
 
@@ -255,6 +282,11 @@ introspection were used:
 - [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server).
 - [Qwen3 model](https://huggingface.co/Qwen/Qwen3-1.7B).
 - [Q4_K_M weights](https://huggingface.co/bartowski/Qwen_Qwen3-1.7B-GGUF).
+- [Qwen3.5-4B model card](https://huggingface.co/Qwen/Qwen3.5-4B) and
+  [Q4_K_M weights](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF).
+  The smaller alternative uses [Qwen3.5-2B weights](https://huggingface.co/unsloth/Qwen3.5-2B-GGUF).
+  Context7's llama.cpp documentation confirmed the `enable_thinking` template
+  parameter and structured-output schema support during the 3.5 upgrade.
 - Voice Context7 lookup also exceeded quota. The sibling project's working
   Qwen3-ASR adapter, installed sherpa-onnx API and public sample WAVs were used,
   with [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx),

@@ -6,8 +6,10 @@ small C++ bridge to librime for automatic redraws. No inference runs in Rime.
 
 ## Flow
 
-1. The filter collects at most eight normal candidates, sends a ranking request
-   when eligible, and immediately yields the unchanged candidates.
+1. The filter collects at most eight candidates, sends a ranking request for
+   the ordinary same-span prefix when it has at least two entries, and immediately
+   yields the unchanged candidates. Ranking can run on the first phrase after
+   focus, with no recent commit context.
 2. The service debounces for 80 ms and runs one inference at a time. New requests
    replace queued work and cancel obsolete active work from the same socket.
 3. Qwen returns a constrained `best` index with thinking disabled.
@@ -33,7 +35,8 @@ click handling remain owned by GNOME. Disabling restores the text fallback and
 removes the added actors and method override. No inference or transport changes
 are involved. These are private Shell APIs; compatibility is limited to GNOME 51.
 
-Service deadline: 1,200 ms including queue and debounce. Lua expiry: 2 seconds.
+Ranking service deadline: 3 seconds including queue and debounce. Lua and
+frontend expiry: 4 seconds.
 The scheduler bounds its own wait even if a ranker ignores cancellation; a stuck
 transport cannot retain the queue indefinitely. The HTTP adapter explicitly
 settles aborted requests, and Lua records fallback when no choice was available.
@@ -50,7 +53,11 @@ auxiliary codes, and a moved composition caret still bypass assistance.
 
 `R2` carries context, double-pinyin input, expanded preedit pinyin, and the original
 first candidate. Qwen receives the original phrase, raw keys, and prior context,
-with two unrelated correction demonstrations. Directly presenting typo-containing
+with two unrelated correction demonstrations. The default model is Qwen3.5-4B
+Q4_K_M in non-thinking mode; the smaller Qwen3-1.7B remains selectable via
+`RIWEN_MODEL`. Structured decoding requires exactly the original character count
+and only basic CJK characters, before Python and Lua apply independent guards.
+Directly presenting typo-containing
 expanded pinyin as a target made this small model preserve malformed phrases, so
 the current prompt does not use that field as a pronunciation constraint.
 
@@ -59,8 +66,9 @@ CJK-only output with at most three replacements, affecting no more than half the
 characters. Unchanged, empty, or invalid outputs add nothing. These are structural
 guards, not proof of grammatical correctness or exact phonetic alignment.
 
-Correction requests debounce for 240 ms and have a 3-second service deadline;
-Lua and the frontend wait up to 4 seconds. They share the serial inference queue
+Correction requests debounce for 240 ms and have a 5-second service deadline;
+Lua and the frontend wait up to 6 seconds. This accommodates the measured 4B
+inference time on integrated graphics. They share the serial inference queue
 and stale-request cancellation with ranking. A valid correction becomes a new
 Rime candidate with the original span, quality, and preedit; original candidates
 remain available and later pin filters retain precedence. The existing Qwen badge,
@@ -75,21 +83,27 @@ freezes automatic application. Replies must
 match request ID, input, context, and original candidates, with an index in range.
 Original candidate objects and candidates beyond the first eight are preserved.
 
-The first eight must be ordinary candidates (`phrase`, `user_phrase`, `sentence`,
-or `table`),
-have matching ranges, and quality below 90. Mixed English/custom lists, different
-segment spans, auxiliary codes, and input with a moved cursor bypass ranking.
-This deliberately limits prototype coverage. The profile adapter inserts before existing filters so explicit pins and
+The first candidate and at least one following candidate must be ordinary
+(`phrase`, `user_phrase`, `sentence`, or `table`), have matching ranges, and
+quality below 90. Ranking stops before the first custom, high-priority, or
+different-span candidate and leaves that candidate and the remaining tail in
+place. Auxiliary codes and input with a moved cursor bypass ranking.
+The profile adapter inserts before existing filters so explicit pins and
 presentation filters are applied afterward. Schemes are discovered from the
 deployed profile, with no fixed ID; standalone script and table schemes use their
-own alphabet. Script schemes wait for four input characters before assistance;
+own alphabet. Script schemes wait for two input characters before assistance;
 table schemes can rank shorter codes. Custom/high-priority candidates remain
 ineligible, and generated corrections are disabled for table schemes.
 
 ## Context
 
-Recent Rime commits are capped at 768 UTF-8 bytes. Edits, navigation, common control
-shortcuts, F9, and 30 seconds of inactivity clear context. This is **not** actual
+Recent Rime commits are capped at 768 UTF-8 bytes. When none are available,
+ranking asks the model for a common standalone candidate using the input code;
+it favors Rime's first candidate when the choice is unclear. Plain Backspace,
+Delete and caret movement within an active Rime composition invalidate pending
+choices while retaining preceding commits. Edits/navigation outside a composition
+or at its boundary that could reach the application,
+common control shortcuts, F9, and 30 seconds of inactivity clear context. This is **not** actual
 application surrounding text. The experimental frontend clears context and
 composition on focus loss, resets context on content-type changes, and bypasses
 PASSWORD, PIN, and PRIVATE fields. Stock IBus Rime's Lua extension lacks these

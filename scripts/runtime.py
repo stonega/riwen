@@ -14,6 +14,7 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from riwen.paths import DATA, NATIVE, PACKAGED, PLUGIN, PROJECT, isolated_profile
+from riwen.models import model_spec, selected_model
 
 
 def run(*args, **kwargs):
@@ -67,7 +68,9 @@ def prepare_native():
 
 def start_model(cpu=False):
     import re
-    model = DATA / "models/qwen3-1.7b-q4_k_m.gguf"
+    identifier = selected_model()
+    spec = model_spec(identifier)
+    model = DATA / "models" / spec.filename
     if not model.is_file():
         raise RuntimeError("Run python3 scripts/runtime.py model-download first")
     bundled = DATA / "llama-vulkan/llama-b10964/llama-server"
@@ -82,7 +85,7 @@ def start_model(cpu=False):
         device = device or (match[1] if match else None)
         if check.returncode or not re.search(r"Available devices:\s*\S", check.stdout):
             raise RuntimeError("No GPU backend found. Download the Vulkan runtime or use --cpu.")
-    child = subprocess.Popen([executable, "--model", str(model), "--alias", "qwen3-1.7b", "--host", "127.0.0.1",
+    child = subprocess.Popen([executable, "--model", str(model), "--alias", identifier, "--host", "127.0.0.1",
                               "--port", str(port), "--ctx-size", "2048", "--parallel", "1", "--threads", "6",
                               "--threads-batch", "6", "--n-gpu-layers", "0" if cpu else "99",
                               *(["--device", device] if device and not cpu else []),
@@ -131,8 +134,8 @@ def main():
     elif args.command == "rime-prepare":
         prepare_native()
     elif args.command == "model-download":
-        download("https://huggingface.co/bartowski/Qwen_Qwen3-1.7B-GGUF/resolve/main/Qwen_Qwen3-1.7B-Q4_K_M.gguf",
-                 DATA / "models/qwen3-1.7b-q4_k_m.gguf", "72c5c3cb38fa32d5256e2fe30d03e7a64c6c79e668ad84057e3bd66e250b24fb")
+        spec = model_spec(selected_model())
+        download(spec.url, DATA / "models" / spec.filename, spec.sha256)
     elif args.command == "runtime-download":
         import platform
         if platform.system() != "Linux" or platform.machine() != "x86_64":

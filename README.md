@@ -10,13 +10,13 @@ install the Riwen RPM. It installs the Python backend, a prebuilt native bridge,
 and the GNOME extension together:
 
 ```sh
-sudo dnf install ./dist/riwen-0.1.0-1.fc45.x86_64.rpm
+sudo dnf install ./dist/riwen-0.1.2-1.fc45.x86_64.rpm
 ```
 
 Use the RPM built for your Fedora release. Sign out and back in, then enable
 **Riwen — Local Qwen for Rime** in GNOME Extensions. Installation itself does not
 start Riwen, enable the extension, or change your input method. Once enabled,
-Riwen prepares its local Qwen model (first download about 1.3 GB). The panel shows
+Riwen prepares its local Qwen3.5-4B model (first download about 2.74 GB). The panel shows
 setup status, a scheme chooser, an on/off switch, and settings. Turning assistance
 off restores the previous input method.
 
@@ -30,6 +30,8 @@ other double-pinyin schemes, and table schemes no longer require the 小鹤 ID o
 candidates. Phonetic/script schemes can also offer limited long-phrase correction;
 shape/table schemes use ranking only. Choose a scheme, then **Restart to apply
 settings**. Original candidates remain selectable; candidate assistance never commits for you.
+Ranking can suggest a candidate for the first phrase in a text field, before any
+previous Rime commit is available.
 
 **Voice input:** open the Riwen panel → **Prepare voice model**, then focus a text
 field and press **F10** to start speaking. Press **F10** again to recognize and

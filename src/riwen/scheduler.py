@@ -18,7 +18,7 @@ def consume(task):
 
 
 class Scheduler:
-    def __init__(self, rank, debounce=0.08, timeout=1.2, correction_debounce=0.24, correction_timeout=3):
+    def __init__(self, rank, debounce=0.08, timeout=3, correction_debounce=0.24, correction_timeout=5):
         self.rank = rank
         self.debounce, self.timeout = debounce, timeout
         self.correction_debounce, self.correction_timeout = correction_debounce, correction_timeout

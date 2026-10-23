@@ -10,8 +10,7 @@ from .scheduler import Scheduler
 
 class Server(asyncio.DatagramProtocol):
     def __init__(self, rank=None, **options):
-        model = rank or Model(os.environ.get("RIWEN_MODEL_URL", "http://127.0.0.1:18080/v1/chat/completions"),
-                              os.environ.get("RIWEN_MODEL", "qwen3-1.7b"))
+        model = rank or Model(os.environ.get("RIWEN_MODEL_URL", "http://127.0.0.1:18080/v1/chat/completions"))
         self.scheduler = Scheduler(model, **options)
         self.transport = None
 

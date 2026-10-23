@@ -4,6 +4,11 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+import gi
+
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import GdkPixbuf
+
 project = Path(__file__).resolve().parents[1]
 archive = project / "dist/riwen-badge@riwen.shell-extension.zip"
 if not archive.exists():
@@ -20,6 +25,8 @@ with tempfile.TemporaryDirectory(prefix="riwen-zip-") as directory:
     installed = root / "data/gnome-shell/extensions/riwen-badge@riwen"
     assert (installed / "app/src/riwen/server.py").exists()
     assert (installed / "schemas/gschemas.compiled").exists()
+    icon = GdkPixbuf.Pixbuf.new_from_file(str(installed / "icons/riwen-symbolic.svg"))
+    assert (icon.get_width(), icon.get_height()) == (16, 16)
     assert not (installed / "app/runtime/bun").exists()
     assert not (installed / "app/runtime/uv").exists()
     assert (installed / "app/src/voice/worker.py").exists()

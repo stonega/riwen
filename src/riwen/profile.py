@@ -75,7 +75,7 @@ def selected_scheme(source, requested=None):
 
 def settings(scheme, schema, port):
     speller = schema.get("speller", {})
-    return {"port": port, "min_input": 4 if scheme["correction"] else 1,
+    return {"port": port, "min_input": 2 if scheme["correction"] else 1,
             "correction": scheme["correction"] and os.environ.get("RIWEN_CORRECTION") != "0",
             "alphabet": speller.get("alphabet", "abcdefghijklmnopqrstuvwxyz") + speller.get("delimiter", " '")}
 

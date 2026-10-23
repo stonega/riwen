@@ -1,0 +1,610 @@
+{
+  "date": "2026-09-23",
+  "runtime": "llama.cpp b10964",
+  "device": "Intel Arc (MTL), Vulkan0",
+  "quantization": "Q4_K_M",
+  "thinking": false,
+  "contextTokens": 2048,
+  "cases": "examples/correction-cases.json",
+  "note": "Sequential warmed model-only runs on shared desktop hardware; 12 fixed cases repeated three times. Not a held-out accuracy evaluation or a controlled speed benchmark. Includes four unchanged controls. Both use the same prompt and exact-length CJK schema. The screenshot case was used during investigation; no example-specific rule was added to the prompt.",
+  "models": [
+    {
+      "model": "qwen3.5-4b",
+      "correct": 36,
+      "errors": 0,
+      "total": 36,
+      "p50Ms": 2736,
+      "p95Ms": 3122,
+      "note": "Fixed regression examples, not a held-out accuracy evaluation. Model-only latency; no real typing recorded.",
+      "results": [
+        {
+          "pass": 1,
+          "case": 1,
+          "text": "你好这是怎么回事",
+          "suggestion": true,
+          "correct": true,
+          "ms": 3122
+        },
+        {
+          "pass": 1,
+          "case": 2,
+          "text": "这是怎么回事",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2508
+        },
+        {
+          "pass": 1,
+          "case": 3,
+          "text": "今天心情很好",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2770
+        },
+        {
+          "pass": 1,
+          "case": 4,
+          "text": "我们去吃晚饭",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2653
+        },
+        {
+          "pass": 1,
+          "case": 5,
+          "text": "再见我们明天见",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2940
+        },
+        {
+          "pass": 1,
+          "case": 6,
+          "text": "这个问题很简单",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2643
+        },
+        {
+          "pass": 1,
+          "case": 7,
+          "text": "他已经到了公司",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2675
+        },
+        {
+          "pass": 1,
+          "case": 8,
+          "text": "请把文件发给我",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2772
+        },
+        {
+          "pass": 1,
+          "case": 9,
+          "text": "你好这是怎么回事",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2853
+        },
+        {
+          "pass": 1,
+          "case": 10,
+          "text": "今天天气非常好",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2743
+        },
+        {
+          "pass": 1,
+          "case": 11,
+          "text": "我想喝一杯咖啡",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2736
+        },
+        {
+          "pass": 1,
+          "case": 12,
+          "text": "我们正在给墙抹灰",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2886
+        },
+        {
+          "pass": 2,
+          "case": 1,
+          "text": "你好这是怎么回事",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2806
+        },
+        {
+          "pass": 2,
+          "case": 2,
+          "text": "这是怎么回事",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2447
+        },
+        {
+          "pass": 2,
+          "case": 3,
+          "text": "今天心情很好",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2688
+        },
+        {
+          "pass": 2,
+          "case": 4,
+          "text": "我们去吃晚饭",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2733
+        },
+        {
+          "pass": 2,
+          "case": 5,
+          "text": "再见我们明天见",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2861
+        },
+        {
+          "pass": 2,
+          "case": 6,
+          "text": "这个问题很简单",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2511
+        },
+        {
+          "pass": 2,
+          "case": 7,
+          "text": "他已经到了公司",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2630
+        },
+        {
+          "pass": 2,
+          "case": 8,
+          "text": "请把文件发给我",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2794
+        },
+        {
+          "pass": 2,
+          "case": 9,
+          "text": "你好这是怎么回事",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2699
+        },
+        {
+          "pass": 2,
+          "case": 10,
+          "text": "今天天气非常好",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2690
+        },
+        {
+          "pass": 2,
+          "case": 11,
+          "text": "我想喝一杯咖啡",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2646
+        },
+        {
+          "pass": 2,
+          "case": 12,
+          "text": "我们正在给墙抹灰",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2786
+        },
+        {
+          "pass": 3,
+          "case": 1,
+          "text": "你好这是怎么回事",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2680
+        },
+        {
+          "pass": 3,
+          "case": 2,
+          "text": "这是怎么回事",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2478
+        },
+        {
+          "pass": 3,
+          "case": 3,
+          "text": "今天心情很好",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2582
+        },
+        {
+          "pass": 3,
+          "case": 4,
+          "text": "我们去吃晚饭",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2685
+        },
+        {
+          "pass": 3,
+          "case": 5,
+          "text": "再见我们明天见",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2890
+        },
+        {
+          "pass": 3,
+          "case": 6,
+          "text": "这个问题很简单",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2532
+        },
+        {
+          "pass": 3,
+          "case": 7,
+          "text": "他已经到了公司",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2746
+        },
+        {
+          "pass": 3,
+          "case": 8,
+          "text": "请把文件发给我",
+          "suggestion": true,
+          "correct": true,
+          "ms": 2747
+        },
+        {
+          "pass": 3,
+          "case": 9,
+          "text": "你好这是怎么回事",
+          "suggestion": false,
+          "correct": true,
+          "ms": 3036
+        },
+        {
+          "pass": 3,
+          "case": 10,
+          "text": "今天天气非常好",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2869
+        },
+        {
+          "pass": 3,
+          "case": 11,
+          "text": "我想喝一杯咖啡",
+          "suggestion": false,
+          "correct": true,
+          "ms": 3364
+        },
+        {
+          "pass": 3,
+          "case": 12,
+          "text": "我们正在给墙抹灰",
+          "suggestion": false,
+          "correct": true,
+          "ms": 2890
+        }
+      ]
+    },
+    {
+      "model": "qwen3.5-2b",
+      "correct": 24,
+      "errors": 0,
+      "total": 36,
+      "p50Ms": 1449,
+      "p95Ms": 1686,
+      "note": "Fixed regression examples, not a held-out accuracy evaluation. Model-only latency; no real typing recorded.",
+      "results": [
+        {
+          "pass": 1,
+          "case": 1,
+          "text": "你好这是怎么抹灰",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1327
+        },
+        {
+          "pass": 1,
+          "case": 2,
+          "text": "这是怎么会有",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1421
+        },
+        {
+          "pass": 1,
+          "case": 3,
+          "text": "今天心情很好",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1492
+        },
+        {
+          "pass": 1,
+          "case": 4,
+          "text": "我们去吃晚饭",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1435
+        },
+        {
+          "pass": 1,
+          "case": 5,
+          "text": "再见我们明天见",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1566
+        },
+        {
+          "pass": 1,
+          "case": 6,
+          "text": "这个题目很简单",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1434
+        },
+        {
+          "pass": 1,
+          "case": 7,
+          "text": "他已经到了公司",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1500
+        },
+        {
+          "pass": 1,
+          "case": 8,
+          "text": "请把微信发给我",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1625
+        },
+        {
+          "pass": 1,
+          "case": 9,
+          "text": "你好这是怎么回事",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1456
+        },
+        {
+          "pass": 1,
+          "case": 10,
+          "text": "今天天气非常好",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1449
+        },
+        {
+          "pass": 1,
+          "case": 11,
+          "text": "我想喝一杯咖啡",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1442
+        },
+        {
+          "pass": 1,
+          "case": 12,
+          "text": "我们正在给墙抹灰",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1651
+        },
+        {
+          "pass": 2,
+          "case": 1,
+          "text": "你好这是怎么抹灰",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1744
+        },
+        {
+          "pass": 2,
+          "case": 2,
+          "text": "这是怎么会有",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1492
+        },
+        {
+          "pass": 2,
+          "case": 3,
+          "text": "今天心情很好",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1454
+        },
+        {
+          "pass": 2,
+          "case": 4,
+          "text": "我们去吃晚饭",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1453
+        },
+        {
+          "pass": 2,
+          "case": 5,
+          "text": "再见我们明天见",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1509
+        },
+        {
+          "pass": 2,
+          "case": 6,
+          "text": "这个题目很简单",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1404
+        },
+        {
+          "pass": 2,
+          "case": 7,
+          "text": "他已经到了公司",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1421
+        },
+        {
+          "pass": 2,
+          "case": 8,
+          "text": "请把微信发给我",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1537
+        },
+        {
+          "pass": 2,
+          "case": 9,
+          "text": "你好这是怎么回事",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1422
+        },
+        {
+          "pass": 2,
+          "case": 10,
+          "text": "今天天气非常好",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1418
+        },
+        {
+          "pass": 2,
+          "case": 11,
+          "text": "我想喝一杯咖啡",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1424
+        },
+        {
+          "pass": 2,
+          "case": 12,
+          "text": "我们正在给墙抹灰",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1532
+        },
+        {
+          "pass": 3,
+          "case": 1,
+          "text": "你好这是怎么抹灰",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1686
+        },
+        {
+          "pass": 3,
+          "case": 2,
+          "text": "这是怎么会有",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1404
+        },
+        {
+          "pass": 3,
+          "case": 3,
+          "text": "今天心情很好",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1431
+        },
+        {
+          "pass": 3,
+          "case": 4,
+          "text": "我们去吃晚饭",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1364
+        },
+        {
+          "pass": 3,
+          "case": 5,
+          "text": "再见我们明天见",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1585
+        },
+        {
+          "pass": 3,
+          "case": 6,
+          "text": "这个题目很简单",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1435
+        },
+        {
+          "pass": 3,
+          "case": 7,
+          "text": "他已经到了公司",
+          "suggestion": true,
+          "correct": true,
+          "ms": 1458
+        },
+        {
+          "pass": 3,
+          "case": 8,
+          "text": "请把微信发给我",
+          "suggestion": true,
+          "correct": false,
+          "ms": 1519
+        },
+        {
+          "pass": 3,
+          "case": 9,
+          "text": "你好这是怎么回事",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1387
+        },
+        {
+          "pass": 3,
+          "case": 10,
+          "text": "今天天气非常好",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1423
+        },
+        {
+          "pass": 3,
+          "case": 11,
+          "text": "我想喝一杯咖啡",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1426
+        },
+        {
+          "pass": 3,
+          "case": 12,
+          "text": "我们正在给墙抹灰",
+          "suggestion": false,
+          "correct": true,
+          "ms": 1496
+        }
+      ]
+    }
+  ]
+}

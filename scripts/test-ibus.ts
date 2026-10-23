@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { prepareProfile } from "../tests/support/profile";
+import type { RankRequest } from "../tests/support/python-backend";
 import { startServer } from "../tests/support/python-backend";
 
 const project = resolve(import.meta.dir, "..");
@@ -11,26 +12,34 @@ await mkdir(root, { recursive: true });
 const profile = await mkdtemp(`${root}/v-`);
 const preferFirst = process.argv.includes("--prefer-first");
 const correction = process.argv.includes("--correction");
+const trigger = process.argv.includes("--trigger");
 const voice = process.argv.includes("--voice");
-let requests = 0;
+const requests: RankRequest[] = [];
 const realModel = process.argv.includes("--model");
 const server = await startServer({
   port: 0,
   debounceMs: realModel ? 80 : 0,
-  onRequest: () => {
-    requests++;
+  onRequest: (request) => {
+    requests.push(request);
   },
   ranker: realModel
     ? undefined
     : async (request) => {
         await Bun.sleep(100);
-        return preferFirst ? 1 : request.candidates.indexOf("程式") + 1;
+        return preferFirst
+          ? 1
+          : Math.max(
+              1,
+              request.candidates.indexOf(
+                trigger && request.input === "iufa" ? "触发" : "程式",
+              ) + 1,
+            );
       },
   corrector: realModel
     ? undefined
     : async () => {
         await Bun.sleep(100);
-        return "这是怎么回事";
+        return "你好这是怎么回事";
       },
 });
 try {
@@ -49,6 +58,7 @@ try {
       profile,
       ...(preferFirst ? ["--prefer-first"] : []),
       ...(correction ? ["--correction"] : []),
+      ...(trigger ? ["--trigger"] : []),
       ...(voice ? ["--voice"] : []),
     ],
     {
@@ -60,9 +70,32 @@ try {
   );
   if ((await child.exited) !== 0)
     throw new Error("Isolated IBus integration test failed");
-  if (requests !== 1)
+  if (
+    !requests.some(
+      (request) => request.input === "igui" && request.context === "",
+    )
+  )
     throw new Error(
-      `Expected one request; got ${requests}. Context leaked or private field was queried.`,
+      "The new field did not receive a context-free ranking request",
+    );
+  if (
+    !correction &&
+    !trigger &&
+    !requests.some(
+      (request) => request.input === "igui" && request.context === "我写了一个",
+    )
+  )
+    throw new Error("The original field lost its committed context");
+  if (
+    trigger &&
+    !requests.some(
+      (request) =>
+        request.input === "iufa" &&
+        request.context === "选词很不准确，且不经常",
+    )
+  )
+    throw new Error(
+      "Editing the screenshot spelling lost its committed context",
     );
 } finally {
   server.close();

@@ -16,6 +16,7 @@ import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from riwen.paths import PROJECT, DATA as CACHE, SESSION, PACKAGED, isolated_profile
+from riwen.models import DEFAULT_MODEL, model_spec
 CONTROL = SESSION / "app.sock"
 STATUS = SESSION / "app-status.json"
 
@@ -37,7 +38,7 @@ def local_url(value):
     return urllib.parse.urlunsplit((url.scheme, url.netloc, "", "", ""))
 
 
-def model_ready(endpoint):
+def model_ready(endpoint, identifier=DEFAULT_MODEL):
     base = local_url(endpoint)
     try:
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
@@ -45,7 +46,7 @@ def model_ready(endpoint):
             if json.load(response).get("status") != "ok":
                 return False
         with opener.open(base + "/v1/models", timeout=0.6) as response:
-            return any(item.get("id") == "qwen3-1.7b" for item in json.load(response).get("data", []))
+            return any(item.get("id") == identifier for item in json.load(response).get("data", []))
     except (OSError, ValueError):
         return False
 
@@ -139,15 +140,17 @@ class App:
         raise RuntimeError(f"A Riwen service did not start. See {SESSION / 'app.log'}")
 
     def prepare_model(self):
+        identifier = self.env.setdefault("RIWEN_MODEL", DEFAULT_MODEL)
         endpoint = self.env.get("RIWEN_MODEL_URL", "http://127.0.0.1:18080/v1/chat/completions")
-        if model_ready(endpoint):
+        if model_ready(endpoint, identifier):
             print("Using your running Qwen model.", flush=True)
             self.env["RIWEN_MODEL_URL"] = endpoint
             return
         if "RIWEN_MODEL_URL" in self.env:
-            raise RuntimeError("The configured Qwen endpoint is not healthy.")
-        self.report("model", "Preparing Qwen (first download: about 1.3 GB)…")
-        if not (CACHE / "models/qwen3-1.7b-q4_k_m.gguf").exists():
+            raise RuntimeError(f"The configured endpoint is not healthy or does not serve {identifier}.")
+        spec = model_spec(identifier)
+        self.report("model", f"Preparing {spec.name} (first download: about {spec.download_gb} GB)…")
+        if not (CACHE / "models" / spec.filename).exists():
             self.run(sys.executable, "scripts/runtime.py", "model-download")
         if not self.env.get("RIWEN_LLAMA_SERVER") and not (CACHE / "llama-vulkan/llama-b10964/llama-server").exists():
             self.run(sys.executable, "scripts/runtime.py", "runtime-download")
@@ -162,7 +165,7 @@ class App:
             self.tick()
             if child.poll() is not None:
                 break
-            if model_ready(endpoint):
+            if model_ready(endpoint, identifier):
                 return
         raise RuntimeError(f"Qwen did not become ready. See {SESSION / 'app.log'}")
 

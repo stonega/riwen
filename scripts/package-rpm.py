@@ -15,7 +15,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", default="0.1.0")
+    parser.add_argument("--version", default="0.1.2")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){1,3}", args.version):
         parser.error("Use a numeric dotted version")

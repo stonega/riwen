@@ -4,10 +4,10 @@
 
 Install the Riwen RPM using DNF, sign out/back in, then enable **Riwen — Local
 Qwen for Rime** in GNOME Extensions. Installing the RPM does not enable or start
-Riwen. Once enabled, click the speech-bubble icon with two text strokes in the top
+Riwen. Once enabled, click the outlined Q icon in the top
 bar to open Riwen's menu. The menu opens centered beneath the icon, shifting inward
 near a screen edge. It shows preparation/model status and reports **Ready** when
-you can type. First use downloads about 1.3 GB. The optional Python extension
+you can type. First use downloads Qwen3.5-4B (about 2.74 GB). The optional Python extension
 ZIP remains available; see [setup](../implementation/setup.md).
 
 - **Qwen assistance:** start or stop; off restores the previous input method.
@@ -70,18 +70,45 @@ out after 60 seconds; use shorter utterances on slower CPUs.
 extension-managed Riwen session. The examples below use 小鹤双拼; use your own
 scheme's spelling otherwise.
 
+In a fresh ordinary text field, type `igui` and pause. Riwen now requests a
+ranking for this first phrase; the model chooses a common standalone candidate
+when there is no previous commit. A **Qwen** badge marks its choice, even if it
+agrees with Rime's first candidate. Script schemes accept two-key inputs such as
+`hf` too; single initials still bypass ranking.
+For a running standalone bridge on its default port,
+`python3 examples/request.py --first` sends the same context-free request
+without using your typing history.
+
 Try `woxpleyige`, Space, then `igui` and pause. With `我写了一个` as context, Qwen
 should promote `程式`. Press Space to commit the displayed first candidate.
 The chosen word shows a small badge, like **程式 〔Qwen〕**. The badge also appears
 when Qwen agrees with the original first candidate. It is only shown in the
 candidate menu; committed text contains just the word.
 Suggestions may time out or be wrong; normal candidates remain available.
+Custom candidates and different input spans keep their positions. A quick
+Space commit still uses the candidate currently displayed.
+
+For the `chu fa` example, commit `选词很不准确，且不经常`, then type
+`iufa` and pause: **触发** should be preferred over **出发**. Correcting spelling
+with Backspace inside the composition now retains the preceding commits; document
+edits and focus changes still clear them. Ranking can wait up to three seconds
+for the local model, with a four-second frontend expiry. Immediate commits and
+candidate navigation preserve the displayed selection.
+`python3 examples/request.py --trigger` sends this fixed example to a running bridge.
+For a private-bus end-to-end model check, run
+`RIWEN_MODEL_URL=http://127.0.0.1:PORT/v1/chat/completions bun run test:ibus --model --trigger`.
 
 For a long phrase with apparent typos, Riwen can add a new correction. Try
 `veuizfmhhvui` and pause: **这是怎忙会是** can gain **这是怎么回事 〔Qwen〕**
 as the first candidate. The original remains selectable. This also works without
 previously committed context. If you commit immediately or begin navigating the
 menu, a late correction cannot change that selection.
+
+The screenshot example is also covered: `nihcveuizfmohvui` (displayed as
+`ni hao zhe shi zen mo hui shi`) can turn **你好这是怎抹灰是** into
+**你好这是怎么回事 〔Qwen〕** with Qwen3.5-4B. Leave the composition idle
+while waiting; correction has a five-second deadline and may take several seconds
+on integrated graphics. Committing or navigating first preserves your selection.
 
 Corrections currently cover full phrases of 6–24 Chinese characters, keep the
 same length, and change at most three characters (and no more than half the

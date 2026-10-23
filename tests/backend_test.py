@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from dataclasses import replace
 import json
 import os
+import re
 from pathlib import Path
 import socket
 import sys
@@ -54,7 +55,8 @@ class ProfileCompatibilityTest(unittest.TestCase):
 
 class ProtocolTest(unittest.TestCase):
     def test_roundtrip(self):
-        for sample in (SAMPLE, CORRECTION, replace(SAMPLE, context="我在写\n文字\t测试")):
+        for sample in (SAMPLE, CORRECTION, replace(SAMPLE, context=""),
+                       replace(SAMPLE, context="我在写\n文字\t测试")):
             self.assertEqual(decode_request(encode_request(sample)), sample)
         for raw in ("a", "chengshi", "hk", "1u;3", "A/B", "ab cd"):
             request = replace(SAMPLE, input=raw)
@@ -64,7 +66,7 @@ class ProtocolTest(unittest.TestCase):
             self.assertEqual(decode_request(encode_request(request)), request)
 
     def test_rejects_malformed_fields(self):
-        changes = [{"context": ""}, {"context": "字" * 257}, {"input": "\x00aux"}, {"id": "0"},
+        changes = [{"context": "  "}, {"context": "字" * 257}, {"input": "\x00aux"}, {"id": "0"},
                    {"id": "1١"}, {"candidates": ["one"]}, {"candidates": ["字"] * 9},
                    {"candidates": ["", "two"]}, {"candidates": ["x" * 193, "two"]}]
         for change in changes:
@@ -81,8 +83,18 @@ class ProtocolTest(unittest.TestCase):
 
     def test_correction_guards(self):
         self.assertTrue(valid_correction("这是怎忙会是", "这是怎么回事"))
+        self.assertTrue(valid_correction("你好这是怎抹灰是", "你好这是怎么回事"))
+        self.assertFalse(valid_correction("你好这是怎抹灰是", "你好，这是怎么抹灰的"))
         for text in ("这是怎忙会是", "你好这是怎么回事", "这是怎么回事？", "我想去公园玩", "<script>", None):
             self.assertFalse(valid_correction("这是怎忙会是", text))
+
+    def test_correction_schema_prevents_added_characters_and_punctuation(self):
+        request = replace(CORRECTION, candidates=["你好这是怎抹灰是"])
+        schema = payload_for(request, "qwen3.5-4b")["response_format"]["json_schema"]["schema"]
+        pattern = schema["properties"]["text"]["pattern"]
+        self.assertIsNotNone(re.fullmatch(pattern, "你好这是怎么回事"))
+        for text in ("你好，这是怎么回事", "你好这是怎么回事啊", "这是怎么回事", "abcdefgh"):
+            self.assertIsNone(re.fullmatch(pattern, text))
 
     def test_local_urls_only(self):
         for url in ("https://example.com/chat", "http://localhost/chat", "http://user:pass@127.0.0.1/chat",
@@ -100,6 +112,12 @@ class ProtocolTest(unittest.TestCase):
         self.assertIn(CORRECTION.input, prompt)
         self.assertIn(CORRECTION.candidates[0], prompt)
         self.assertNotIn(CORRECTION.pinyin, prompt)
+
+    def test_first_phrase_uses_no_context_prompt(self):
+        payload = payload_for(replace(SAMPLE, context=""), "qwen3.5-4b")
+        self.assertIn("没有前文", payload["messages"][0]["content"])
+        self.assertIn(SAMPLE.input, payload["messages"][1]["content"])
+        self.assertNotIn("句子：", payload["messages"][1]["content"])
 
 
 @asynccontextmanager
@@ -257,6 +275,15 @@ class SchedulerTest(unittest.IsolatedAsyncioTestCase):
             result = asyncio.get_running_loop().create_future()
             scheduler.submit("a", SAMPLE, lambda *x: result.set_result(x))
             self.assertEqual(await asyncio.wait_for(result, 1), (1, "fallback"))
+
+    async def test_default_ranking_budget_allows_slower_local_inference(self):
+        async def rank(_request):
+            await asyncio.sleep(1.3)
+            return 2
+        scheduler = self.scheduler(rank)
+        result = asyncio.get_running_loop().create_future()
+        scheduler.submit("a", SAMPLE, lambda *x: result.set_result(x))
+        self.assertEqual(await asyncio.wait_for(result, 3.5), (2, "ok"))
 
     async def test_queue_deadline_serialization_and_bound(self):
         calls = []

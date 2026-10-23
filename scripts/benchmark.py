@@ -34,7 +34,7 @@ async def main():
             result["ms"] = round((time.monotonic() - started) * 1000)
             results.append(result)
     times = sorted(item["ms"] for item in results)
-    print(json.dumps({"model": "Qwen3-1.7B Q4_K_M", "timestamp": datetime.now(timezone.utc).isoformat(),
+    print(json.dumps({"model": rank.model, "timestamp": datetime.now(timezone.utc).isoformat(),
                       "firstRequestMs": first, "correct": sum(item["correct"] for item in results), "total": len(results),
                       "p50Ms": times[math.ceil(len(times) * .5) - 1], "p95Ms": times[math.ceil(len(times) * .95) - 1],
                       "note": "Synthetic model-only benchmark; excludes debounce, Rime/IBus, and real typing. Not an accuracy evaluation.",
